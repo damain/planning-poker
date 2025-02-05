@@ -36,6 +36,7 @@ export function Room() {
   const [newStoryDescription, setNewStoryDescription] = useState("");
   const [editingStory, setEditingStory] = useState<Story | null>(null);
   const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
+  const [isAnonymizeModalOpen, setIsAnonymizeModalOpen] = useState(false);
   const [tempUserName, setTempUserName] = useState("");
   const [users, setUsers] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -492,16 +493,14 @@ export function Room() {
   };
 
   const handleAnonymizeAllStories = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to anonymize all stories? This cannot be undone."
-      )
-    ) {
+    if (!roomCode) {
+      toast.error("Room code is missing");
       return;
     }
     try {
       await anonymizeAllStories(roomCode);
       toast.success("All stories anonymized successfully");
+      setIsAnonymizeModalOpen(false);
     } catch (err) {
       console.error("Failed to anonymize stories:", err);
       toast.error("Failed to anonymize stories");
@@ -893,7 +892,7 @@ export function Room() {
                 Add Story
               </button>
               <button
-                onClick={handleAnonymizeAllStories}
+                onClick={() => setIsAnonymizeModalOpen(true)}
                 className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500 flex items-center gap-2"
                 title="Anonymize all stories"
               >
@@ -1032,6 +1031,34 @@ export function Room() {
           </div>
         </div>
       </div>
+
+      {/* Anonymize Confirmation Modal */}
+      {isAnonymizeModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Confirm Anonymize All Stories
+            </h3>
+            <p className="text-gray-300 mb-6">
+              This action will permanently anonymize all stories in this room by removing their titles and descriptions. This change will be saved to the database and cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsAnonymizeModalOpen(false)}
+                className="px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAnonymizeAllStories}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500"
+              >
+                Anonymize All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {editingStory && (
