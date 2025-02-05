@@ -559,7 +559,7 @@ export function Room() {
                   >
                     <path
                       fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM3.707 7.293a1 1 0 00-1.414-1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                       clipRule="evenodd"
                     />
                   </svg>
@@ -577,22 +577,18 @@ export function Room() {
             <div className="poker-table-container">
               {/* The Table */}
               <div className="poker-table">
-                {currentStory ? (
+                {room?.current_story && currentStory && (
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <h3 className="text-2xl font-bold text-white">
                         {currentStory.title}
                       </h3>
                       {currentStory.description && (
-                        <p className="text-lg text-gray-300">
+                        <p className="mt-2 text-lg text-gray-300 whitespace-pre-wrap">
                           {currentStory.description}
                         </p>
                       )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-gray-400">
-                    Select a story to start voting
                   </div>
                 )}
               </div>
@@ -913,9 +909,9 @@ export function Room() {
                   <div className="flex-1">
                     <h5 className="font-medium">{story.title}</h5>
                     {story.description && (
-                      <p className="mt-1 text-sm opacity-80">
+                      <div className="text-gray-300 text-sm whitespace-pre-wrap">
                         {story.description}
-                      </p>
+                      </div>
                     )}
                     {story.final_estimate && (
                       <p className="mt-2 text-sm">
