@@ -38,6 +38,29 @@ export interface Database {
           show_votes?: boolean
         }
       }
+      room_users: {
+        Row: {
+          id: number
+          created_at: string
+          room_code: string
+          user_name: string
+          last_seen: string
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          room_code: string
+          user_name: string
+          last_seen: string
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          room_code?: string
+          user_name?: string
+          last_seen?: string
+        }
+      }
       votes: {
         Row: {
           id: number
