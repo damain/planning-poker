@@ -159,22 +159,31 @@ export function Room() {
   }, [roomCode])
 
   const handleVote = async (value: number) => {
-    if (!room?.current_story) {
-      setError('No active story to vote on')
-      return
-    }
-
     try {
-      const { error: voteError } = await supabase
+      const { data: existingVote } = await supabase
         .from('votes')
-        .upsert({
-          room_code: roomCode,
-          story_id: room.current_story,
-          user_name: userName,
-          vote_value: value
-        })
+        .select('id')
+        .eq('room_code', roomCode)
+        .eq('story_id', room.current_story)
+        .eq('user_name', userName)
+        .single()
 
-      if (voteError) throw voteError
+      if (existingVote) {
+        await supabase
+          .from('votes')
+          .update({ vote_value: value })
+          .eq('id', existingVote.id)
+      } else {
+        await supabase
+          .from('votes')
+          .insert({
+            room_code: roomCode,
+            story_id: room.current_story,
+            user_name: userName,
+            vote_value: value
+          })
+      }
+
       setSelectedValue(value)
     } catch (err) {
       setError('Failed to submit vote')
@@ -485,74 +494,132 @@ export function Room() {
               </div>
             </div>
 
-            {/* Current Story and Voting */}
-            <div className="lg:col-span-2">
-              {currentStory ? (
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-lg font-medium text-gray-200">Current Story</h4>
-                    <div className="mt-2 rounded-lg bg-gray-700 p-4">
-                      <h5 className="font-medium text-white">{currentStory.title}</h5>
-                      {currentStory.description && (
-                        <p className="mt-2 text-sm text-gray-300">{currentStory.description}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-4 flex items-center justify-between">
-                      <h4 className="text-lg font-medium text-gray-200">Vote</h4>
-                      <button
-                        onClick={handleToggleVotes}
-                        className="rounded-md bg-gray-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                      >
-                        {room.show_votes ? 'Hide Votes' : 'Show Votes'}
-                      </button>
-                    </div>
-
-                    <div className="flex flex-wrap justify-center gap-4">
-                      {FIBONACCI_NUMBERS.map((number) => (
-                        <button
-                          key={number}
-                          onClick={() => handleVote(number)}
-                          className={`
-                            flex h-24 w-16 items-center justify-center rounded-lg text-lg font-semibold shadow-sm
-                            ${selectedValue === number
-                              ? 'bg-indigo-600 text-white ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-800'
-                              : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                            }
-                          `}
-                        >
-                          {number}
-                        </button>
-                      ))}
-                    </div>
-
-                    {room.show_votes && (
-                      <div className="mt-8">
-                        <h4 className="mb-4 text-lg font-medium text-gray-200">Votes</h4>
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                          {votes.map((vote) => (
-                            <div
-                              key={`${vote.user_name}-${vote.story_id}`}
-                              className="rounded-lg bg-gray-700/50 p-4"
-                            >
-                              <div className="font-medium text-gray-200">{vote.user_name}</div>
-                              <div className="text-2xl font-bold text-indigo-400">
-                                {vote.vote_value || '?'}
-                              </div>
-                            </div>
-                          ))}
+            {/* Current Story and Voting Area */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Players and Table Layout */}
+              <div className="relative">
+                {/* Top Players */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-4">
+                  {votes.slice(0, 3).map((vote) => (
+                    <div key={vote.id} className="w-32 h-24">
+                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{vote.user_name}</div>
+                      <div className={`card-flip relative h-16 ${room.show_votes ? 'show-vote' : ''}`}>
+                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        </div>
+                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="text-3xl font-bold text-white">{vote.vote_value}</div>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <div className="flex h-full items-center justify-center rounded-lg bg-gray-700 p-8 text-gray-400">
-                  {stories.length > 0
-                    ? 'Select a story to start voting'
-                    : 'Add a story to start voting'}
+
+                {/* Left Players */}
+                <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-4">
+                  {votes.slice(3, 5).map((vote) => (
+                    <div key={vote.id} className="w-32 h-24">
+                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{vote.user_name}</div>
+                      <div className={`card-flip relative h-16 ${room.show_votes ? 'show-vote' : ''}`}>
+                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        </div>
+                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="text-3xl font-bold text-white">{vote.vote_value}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right Players */}
+                <div className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 flex flex-col gap-4">
+                  {votes.slice(5, 7).map((vote) => (
+                    <div key={vote.id} className="w-32 h-24">
+                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{vote.user_name}</div>
+                      <div className={`card-flip relative h-16 ${room.show_votes ? 'show-vote' : ''}`}>
+                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        </div>
+                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="text-3xl font-bold text-white">{vote.vote_value}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom Players */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 flex gap-4">
+                  {votes.slice(7, 10).map((vote) => (
+                    <div key={vote.id} className="w-32 h-24">
+                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{vote.user_name}</div>
+                      <div className={`card-flip relative h-16 ${room.show_votes ? 'show-vote' : ''}`}>
+                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        </div>
+                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                          <div className="text-3xl font-bold text-white">{vote.vote_value}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* The Table */}
+                <div className="rounded-xl bg-gradient-to-br from-emerald-900/50 to-teal-900/50 p-8 shadow-lg ring-1 ring-white/10 mx-32 my-32">
+                  {currentStory ? (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-bold text-white">{currentStory.title}</h3>
+                        {currentStory.description && (
+                          <p className="text-lg text-gray-300">{currentStory.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-gray-400">
+                      Select a story to start voting
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Voting Area */}
+              {currentStory && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-lg font-medium text-gray-200">Your Vote</h4>
+                    <button
+                      onClick={handleToggleVotes}
+                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                    >
+                      {room.show_votes ? 'Hide Votes' : 'Show Votes'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-7">
+                    {FIBONACCI_NUMBERS.map((value) => (
+                      <button
+                        key={value}
+                        onClick={() => handleVote(value)}
+                        className={`flex h-16 items-center justify-center rounded-lg text-xl font-semibold transition-colors
+                          ${selectedValue === value
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                          }
+                        `}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+
+                  {!room.show_votes && votes.length > 0 && (
+                    <div className="text-center text-gray-400">
+                      {votes.length} vote{votes.length !== 1 ? 's' : ''} cast
+                    </div>
+                  )}
                 </div>
               )}
             </div>
