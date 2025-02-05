@@ -66,3 +66,86 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Sliding Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 100vh;
+  background-color: rgb(31, 41, 55);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 50;
+  overflow-y: auto;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 40;
+}
+
+.sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Story transitions */
+.story-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.story-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-in-out, transform 300ms ease-out;
+}
+
+.story-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.story-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms ease-in-out, transform 300ms ease-out;
+}
+
+/* Smooth transitions for all interactive elements */
+.story-card {
+  transition: all 300ms ease-in-out;
+}
+
+.story-content {
+  opacity: 1;
+  transition: opacity 300ms ease-in-out;
+}
+
+.story-content.loading {
+  opacity: 0.5;
+}
+
+/* Smooth transitions for voting area */
+.voting-area {
+  transition: opacity 300ms ease-in-out;
+}
+
+.voting-area.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
