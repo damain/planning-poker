@@ -872,10 +872,20 @@ export function Room() {
         onClick={() => setIsSidebarOpen(false)}
       />
       <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-white">Stories</h2>
-            <div className="flex gap-2">
+        <div className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-white"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h2 className="text-xl font-semibold text-white">Stories</h2>
+            </div>
+            <div className="flex gap-3">
               <button
                 onClick={() => setIsAddingStory(true)}
                 className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
@@ -951,27 +961,27 @@ export function Room() {
                     >
                       {story.id.toString() === room.current_story ? (
                         <svg
-                          className="h-5 w-5"
-                          viewBox="0 0 24 24"
+                          className="h-8 w-8"
+                          viewBox="0 0 20 20"
                           fill="currentColor"
                         >
                           <path
                             fillRule="evenodd"
-                            d="M19.916 4.626a.75.75 0 011.04.208l9 13.5a.75.75 0 01-1.04 1.04l-6.25-6.25a.75.75 0 01-.53-.53l-3.5 3.5a.75.75 0 01-1.06 1.06l6.25 6.25a.75.75 0 01-1.06.53V19a.75.75 0 01.53-.53l6.25-6.25a.75.75 0 01.53-.53z"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                             clipRule="evenodd"
                           />
                         </svg>
                       ) : (
                         <svg
-                          className="h-5 w-5"
+                          className="h-8 w-8"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
+                          strokeWidth={2}
                         >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            strokeWidth={2}
                             d="M9 5l7 7-7 7"
                           />
                         </svg>
