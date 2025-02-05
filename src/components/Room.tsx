@@ -1,168 +1,179 @@
-import { useState, useEffect } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { supabase, subscribeToRoom, createStory, setCurrentStory, toggleShowVotes, editStory } from '../lib/supabase'
-import type { Database } from '../lib/database.types'
-import toast, { Toaster } from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+import {
+  supabase,
+  subscribeToRoom,
+  createStory,
+  setCurrentStory,
+  toggleShowVotes,
+  editStory,
+  anonymizeStory,
+  anonymizeAllStories,
+} from "../lib/supabase";
+import type { Database } from "../lib/database.types";
+import toast, { Toaster } from "react-hot-toast";
 
-type Room = Database['public']['Tables']['rooms']['Row']
-type Vote = Database['public']['Tables']['votes']['Row']
-type Story = Database['public']['Tables']['stories']['Row']
+type Room = Database["public"]["Tables"]["rooms"]["Row"];
+type Vote = Database["public"]["Tables"]["votes"]["Row"];
+type Story = Database["public"]["Tables"]["stories"]["Row"];
 
-const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21]
+const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21];
 
 export function Room() {
-  const { roomCode } = useParams<{ roomCode: string }>()
-  const [searchParams] = useSearchParams()
-  const userName = searchParams.get('user') || ''
-  
-  const [room, setRoom] = useState<Room | null>(null)
-  const [stories, setStories] = useState<Story[]>([])
-  const [votes, setVotes] = useState<Vote[]>([])
-  const [selectedValue, setSelectedValue] = useState<number | null>(null)
-  const [error, setError] = useState('')
-  const [isAddingStory, setIsAddingStory] = useState(false)
-  const [newStoryTitle, setNewStoryTitle] = useState('')
-  const [newStoryDescription, setNewStoryDescription] = useState('')
-  const [editingStory, setEditingStory] = useState<Story | null>(null)
-  const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false)
-  const [tempUserName, setTempUserName] = useState('')
-  const [users, setUsers] = useState<string[]>([])
+  const { roomCode } = useParams<{ roomCode: string }>();
+  const [searchParams] = useSearchParams();
+  const userName = searchParams.get("user") || "";
+
+  const [room, setRoom] = useState<Room | null>(null);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
+  const [selectedValue, setSelectedValue] = useState<number | null>(null);
+  const [error, setError] = useState("");
+  const [isAddingStory, setIsAddingStory] = useState(false);
+  const [newStoryTitle, setNewStoryTitle] = useState("");
+  const [newStoryDescription, setNewStoryDescription] = useState("");
+  const [editingStory, setEditingStory] = useState<Story | null>(null);
+  const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
+  const [tempUserName, setTempUserName] = useState("");
+  const [users, setUsers] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!roomCode) return
+    if (!roomCode) return;
 
     const loadRoom = async () => {
       try {
         const { data: roomData, error: roomError } = await supabase
-          .from('rooms')
-          .select('*')
-          .eq('code', roomCode)
-          .single()
+          .from("rooms")
+          .select("*")
+          .eq("code", roomCode)
+          .single();
 
-        if (roomError) throw roomError
-        setRoom(roomData)
+        if (roomError) throw roomError;
+        setRoom(roomData);
 
         // Load all stories for the room
         const { data: storyData, error: storyError } = await supabase
-          .from('stories')
-          .select('*')
-          .eq('room_code', roomCode)
-          .order('created_at', { ascending: false })
+          .from("stories")
+          .select("*")
+          .eq("room_code", roomCode)
+          .order("created_at", { ascending: false });
 
-        if (storyError) throw storyError
-        setStories(storyData)
+        if (storyError) throw storyError;
+        setStories(storyData);
 
         // Load votes for current story
         if (roomData.current_story) {
           const { data: voteData, error: voteError } = await supabase
-            .from('votes')
-            .select('*')
-            .eq('room_code', roomCode)
-            .eq('story_id', roomData.current_story)
+            .from("votes")
+            .select("*")
+            .eq("room_code", roomCode)
+            .eq("story_id", roomData.current_story);
 
-          if (voteError) throw voteError
-          setVotes(voteData)
+          if (voteError) throw voteError;
+          setVotes(voteData);
         }
       } catch (err) {
-        setError('Failed to load room data')
-        console.error(err)
+        setError("Failed to load room data");
+        console.error(err);
       }
-    }
+    };
 
-    loadRoom()
+    loadRoom();
 
     // Subscribe to room changes
     const subscription = supabase
-      .channel('public:rooms')
+      .channel("public:rooms")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'rooms',
-          filter: `code=eq.${roomCode}`
+          event: "*",
+          schema: "public",
+          table: "rooms",
+          filter: `code=eq.${roomCode}`,
         },
         (payload) => {
-          console.log('Room change event received:', payload)
-          setRoom(payload.new as Room)
+          console.log("Room change event received:", payload);
+          setRoom(payload.new as Room);
         }
       )
-      .subscribe()
+      .subscribe();
 
-    console.log('Room subscription created for room:', roomCode)
+    console.log("Room subscription created for room:", roomCode);
 
     // Subscribe to story changes
     const storySubscription = supabase
-      .channel('public:stories')
+      .channel("public:stories")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'stories',
-          filter: `room_code=eq.${roomCode}`
+          event: "*",
+          schema: "public",
+          table: "stories",
+          filter: `room_code=eq.${roomCode}`,
         },
         (payload) => {
-          console.log('Story change event received:', payload)
-          
+          console.log("Story change event received:", payload);
+
           // Load all stories again to ensure consistency
           supabase
-            .from('stories')
-            .select('*')
-            .eq('room_code', roomCode)
-            .order('created_at', { ascending: false })
+            .from("stories")
+            .select("*")
+            .eq("room_code", roomCode)
+            .order("created_at", { ascending: false })
             .then(({ data, error }) => {
               if (!error && data) {
-                console.log('Reloaded stories:', data)
-                setStories(data)
+                console.log("Reloaded stories:", data);
+                setStories(data);
               }
-            })
+            });
         }
       )
-      .subscribe()
+      .subscribe();
 
     // Subscribe to vote changes
     const voteSubscription = supabase
-      .channel('public:votes')
+      .channel("public:votes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'votes',
-          filter: `room_code=eq.${roomCode}${room?.current_story ? ` AND story_id=eq.${room.current_story}` : ''}`
+          event: "*",
+          schema: "public",
+          table: "votes",
+          filter: `room_code=eq.${roomCode}${
+            room?.current_story ? ` AND story_id=eq.${room.current_story}` : ""
+          }`,
         },
         (payload) => {
-          console.log('Vote change event received:', payload)
-          
+          console.log("Vote change event received:", payload);
+
           // Reload votes for current story
           if (room?.current_story) {
             supabase
-              .from('votes')
-              .select('*')
-              .eq('room_code', roomCode)
-              .eq('story_id', room.current_story)
+              .from("votes")
+              .select("*")
+              .eq("room_code", roomCode)
+              .eq("story_id", room.current_story)
               .then(({ data, error }) => {
                 if (!error && data) {
-                  console.log('Reloaded votes:', data)
-                  setVotes(data)
+                  console.log("Reloaded votes:", data);
+                  setVotes(data);
                 }
-              })
+              });
           }
         }
       )
-      .subscribe()
+      .subscribe();
 
-    console.log('Subscriptions created for room:', roomCode)
+    console.log("Subscriptions created for room:", roomCode);
 
     return () => {
-      subscription.unsubscribe()
-      storySubscription.unsubscribe()
-      voteSubscription.unsubscribe()
-    }
-  }, [roomCode, room])
+      subscription.unsubscribe();
+      storySubscription.unsubscribe();
+      voteSubscription.unsubscribe();
+    };
+  }, [roomCode, room]);
 
   useEffect(() => {
     if (!roomCode || !room?.current_story) {
@@ -174,27 +185,27 @@ export function Room() {
     const loadVotes = async () => {
       try {
         const { data: voteData, error: voteError } = await supabase
-          .from('votes')
-          .select('*')
-          .eq('room_code', roomCode)
-          .eq('story_id', room.current_story)
+          .from("votes")
+          .select("*")
+          .eq("room_code", roomCode)
+          .eq("story_id", room.current_story);
 
-        if (voteError) throw voteError
+        if (voteError) throw voteError;
 
         // Only update votes if we're still on the same story
         if (room.current_story === voteData?.[0]?.story_id) {
-          setVotes(voteData || [])
+          setVotes(voteData || []);
           // Set selected value for current user
-          const userVote = voteData?.find(v => v.user_name === userName)
-          setSelectedValue(userVote?.vote_value || null)
+          const userVote = voteData?.find((v) => v.user_name === userName);
+          setSelectedValue(userVote?.vote_value || null);
         }
       } catch (err) {
-        console.error('Failed to load votes:', err)
+        console.error("Failed to load votes:", err);
       }
-    }
+    };
 
-    loadVotes()
-  }, [roomCode, room?.current_story, userName])
+    loadVotes();
+  }, [roomCode, room?.current_story, userName]);
 
   useEffect(() => {
     if (!roomCode || !room) return;
@@ -202,259 +213,293 @@ export function Room() {
     let currentStoryId = room.current_story;
 
     const voteSubscription = supabase
-      .channel('public:votes')
+      .channel("public:votes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'votes',
-          filter: `room_code=eq.${roomCode}${room.current_story ? ` AND story_id=eq.${room.current_story}` : ''}`
+          event: "*",
+          schema: "public",
+          table: "votes",
+          filter: `room_code=eq.${roomCode}${
+            room.current_story ? ` AND story_id=eq.${room.current_story}` : ""
+          }`,
         },
         async (payload) => {
           // Only process updates if we're still on the same story
           if (currentStoryId === room.current_story) {
-            console.log('Vote change event received:', payload)
-            
+            console.log("Vote change event received:", payload);
+
             if (room.current_story) {
               const { data, error } = await supabase
-                .from('votes')
-                .select('*')
-                .eq('room_code', roomCode)
-                .eq('story_id', room.current_story)
+                .from("votes")
+                .select("*")
+                .eq("room_code", roomCode)
+                .eq("story_id", room.current_story);
 
               if (!error && data) {
-                console.log('Reloaded votes:', data)
-                setVotes(data)
+                console.log("Reloaded votes:", data);
+                setVotes(data);
               }
             }
           }
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      voteSubscription.unsubscribe()
-    }
-  }, [roomCode, room])
+      voteSubscription.unsubscribe();
+    };
+  }, [roomCode, room]);
 
   useEffect(() => {
-    if (!roomCode || !userName) return
+    if (!userName) {
+      setIsUsernameModalOpen(true);
+    }
+  }, [userName]);
+
+  useEffect(() => {
+    if (!roomCode || !userName) return;
 
     const addUserToRoom = async () => {
       try {
         // Get existing users
         const { data: existingUsers } = await supabase
-          .from('room_users')
-          .select('user_name')
-          .eq('room_code', roomCode)
-        
-        const userNames = existingUsers?.map(u => u.user_name).sort() || []
-        
+          .from("room_users")
+          .select("user_name")
+          .eq("room_code", roomCode);
+
+        const userNames = existingUsers?.map((u) => u.user_name).sort() || [];
+
         if (!userNames.includes(userName)) {
-          await supabase
-            .from('room_users')
-            .insert({
-              room_code: roomCode,
-              user_name: userName,
-              last_seen: new Date().toISOString()
-            })
+          await supabase.from("room_users").insert({
+            room_code: roomCode,
+            user_name: userName,
+            last_seen: new Date().toISOString(),
+          });
         } else {
           // Update last_seen
           await supabase
-            .from('room_users')
+            .from("room_users")
             .update({ last_seen: new Date().toISOString() })
-            .eq('room_code', roomCode)
-            .eq('user_name', userName)
+            .eq("room_code", roomCode)
+            .eq("user_name", userName);
         }
 
-        setUsers(userNames.includes(userName) ? userNames : [...userNames, userName].sort())
+        setUsers(
+          userNames.includes(userName)
+            ? userNames
+            : [...userNames, userName].sort()
+        );
       } catch (err) {
-        console.error('Failed to add user to room:', err)
+        console.error("Failed to add user to room:", err);
       }
-    }
+    };
 
-    addUserToRoom()
+    addUserToRoom();
 
     // Keep user's last_seen timestamp updated
     const interval = setInterval(async () => {
       try {
         await supabase
-          .from('room_users')
+          .from("room_users")
           .update({ last_seen: new Date().toISOString() })
-          .eq('room_code', roomCode)
-          .eq('user_name', userName)
+          .eq("room_code", roomCode)
+          .eq("user_name", userName);
       } catch (err) {
-        console.error('Failed to update last_seen:', err)
+        console.error("Failed to update last_seen:", err);
       }
-    }, 30000) // Every 30 seconds
+    }, 30000); // Every 30 seconds
 
     // Subscribe to room_users changes
     const userSubscription = supabase
-      .channel('public:room_users')
+      .channel("public:room_users")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'room_users',
-          filter: `room_code=eq.${roomCode}`
+          event: "*",
+          schema: "public",
+          table: "room_users",
+          filter: `room_code=eq.${roomCode}`,
         },
         async () => {
           // Reload all active users
           const { data: activeUsers } = await supabase
-            .from('room_users')
-            .select('user_name')
-            .eq('room_code', roomCode)
-            .gte('last_seen', new Date(Date.now() - 60000).toISOString()) // Active in last minute
-          
-          setUsers((activeUsers?.map(u => u.user_name) || []).sort())
+            .from("room_users")
+            .select("user_name")
+            .eq("room_code", roomCode)
+            .gte("last_seen", new Date(Date.now() - 60000).toISOString()); // Active in last minute
+
+          setUsers((activeUsers?.map((u) => u.user_name) || []).sort());
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      clearInterval(interval)
-      userSubscription.unsubscribe()
-    }
-  }, [roomCode, userName])
+      clearInterval(interval);
+      userSubscription.unsubscribe();
+    };
+  }, [roomCode, userName]);
 
   const handleSetUsername = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!tempUserName.trim()) return
+    e.preventDefault();
+    if (!tempUserName.trim()) return;
 
-    const searchParams = new URLSearchParams(window.location.search)
-    searchParams.set('user', tempUserName)
-    window.history.replaceState(null, '', `${window.location.pathname}?${searchParams.toString()}`)
-    window.location.reload()
-  }
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set("user", tempUserName);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}?${searchParams.toString()}`
+    );
+    window.location.reload();
+  };
 
   const handleVote = async (value: number) => {
     try {
       const { data: existingVote } = await supabase
-        .from('votes')
-        .select('id')
-        .eq('room_code', roomCode)
-        .eq('story_id', room.current_story)
-        .eq('user_name', userName)
-        .single()
+        .from("votes")
+        .select("id")
+        .eq("room_code", roomCode)
+        .eq("story_id", room.current_story)
+        .eq("user_name", userName)
+        .single();
 
       if (existingVote) {
         await supabase
-          .from('votes')
+          .from("votes")
           .update({ vote_value: value })
-          .eq('id', existingVote.id)
+          .eq("id", existingVote.id);
       } else {
-        await supabase
-          .from('votes')
-          .insert({
-            room_code: roomCode,
-            story_id: room.current_story,
-            user_name: userName,
-            vote_value: value
-          })
+        await supabase.from("votes").insert({
+          room_code: roomCode,
+          story_id: room.current_story,
+          user_name: userName,
+          vote_value: value,
+        });
       }
 
-      setSelectedValue(value)
+      setSelectedValue(value);
     } catch (err) {
-      setError('Failed to submit vote')
-      console.error(err)
+      setError("Failed to submit vote");
+      console.error(err);
     }
-  }
+  };
 
   const handleAddStory = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!newStoryTitle.trim()) {
-      setError('Story title is required')
-      return
+      setError("Story title is required");
+      return;
     }
 
     try {
       const { data: story, error } = await supabase
-        .from('stories')
+        .from("stories")
         .insert({
           room_code: roomCode,
           title: newStoryTitle,
-          description: newStoryDescription
+          description: newStoryDescription,
         })
         .select()
-        .single()
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
-      setNewStoryTitle('')
-      setNewStoryDescription('')
-      setIsAddingStory(false)
-      
+      setNewStoryTitle("");
+      setNewStoryDescription("");
+      setIsAddingStory(false);
+
       // If no current story is selected, set this as current
       if (!room?.current_story && story) {
-        await setCurrentStory(roomCode!, story.id.toString())
+        await setCurrentStory(roomCode!, story.id.toString());
       }
     } catch (err) {
-      setError('Failed to create story')
-      console.error(err)
+      setError("Failed to create story");
+      console.error(err);
     }
-  }
+  };
 
   const handleSelectStory = async (storyId: number) => {
     try {
       setIsLoading(true);
-      
+
       // Keep old votes visible until new story is fully loaded
       const { error } = await supabase
-        .from('rooms')
+        .from("rooms")
         .update({ current_story: storyId })
-        .eq('code', roomCode)
+        .eq("code", roomCode);
 
       if (error) throw error;
-
     } catch (err) {
-      console.error('Failed to select story:', err)
+      console.error("Failed to select story:", err);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const handleToggleVotes = async () => {
-    if (!room) return
+    if (!room) return;
     try {
-      await toggleShowVotes(roomCode!, !room.show_votes)
+      await toggleShowVotes(roomCode!, !room.show_votes);
     } catch (err) {
-      setError('Failed to toggle votes')
-      console.error(err)
+      setError("Failed to toggle votes");
+      console.error(err);
     }
-  }
+  };
 
   const handleEditStory = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!editingStory) return
+    e.preventDefault();
+    if (!editingStory) return;
 
     if (!editingStory.title.trim()) {
-      setError('Story title is required')
-      return
+      setError("Story title is required");
+      return;
     }
 
     try {
       await editStory(editingStory.id, {
         title: editingStory.title,
-        description: editingStory.description || undefined
-      })
-      setEditingStory(null)
+        description: editingStory.description || undefined,
+      });
+      setEditingStory(null);
     } catch (err) {
-      setError('Failed to update story')
-      console.error(err)
+      setError("Failed to update story");
+      console.error(err);
     }
-  }
+  };
+
+  const handleAnonymizeStory = async (storyId: number) => {
+    try {
+      await anonymizeStory(storyId);
+      toast.success('Story anonymized successfully');
+    } catch (err) {
+      console.error('Failed to anonymize story:', err);
+      toast.error('Failed to anonymize story');
+    }
+  };
+
+  const handleAnonymizeAllStories = async () => {
+    if (!confirm('Are you sure you want to anonymize all stories? This cannot be undone.')) {
+      return;
+    }
+    try {
+      await anonymizeAllStories(roomCode);
+      toast.success('All stories anonymized successfully');
+    } catch (err) {
+      console.error('Failed to anonymize stories:', err);
+      toast.error('Failed to anonymize stories');
+    }
+  };
 
   const copyRoomLink = async () => {
     try {
       // Create a clean URL without the username parameter
       const url = new URL(window.location.href);
-      url.searchParams.delete('user');
+      url.searchParams.delete("user");
       await navigator.clipboard.writeText(url.toString());
-      toast.success('Room link copied to clipboard!');
+      toast.success("Room link copied to clipboard!");
     } catch (err) {
-      toast.error('Failed to copy room link');
+      toast.error("Failed to copy room link");
     }
   };
 
@@ -463,10 +508,12 @@ export function Room() {
       <div className="flex min-h-screen items-center justify-center bg-gray-900">
         <div className="text-xl text-gray-200">Loading...</div>
       </div>
-    )
+    );
   }
 
-  const currentStory = stories.find(s => s.id.toString() === room.current_story)
+  const currentStory = stories.find(
+    (s) => s.id.toString() === room.current_story
+  );
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -494,7 +541,12 @@ export function Room() {
                   onClick={copyRoomLink}
                   className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                     <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                   </svg>
@@ -508,8 +560,16 @@ export function Room() {
             <div className="mt-4 rounded-md bg-red-900/50 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div className="ml-3">
@@ -521,127 +581,20 @@ export function Room() {
 
           {/* Current Story and Voting Area */}
           <div className="mt-6">
-            <div className={`story-content ${isLoading ? 'loading' : ''}`}>
-              {currentStory ? (
-                <div className="mb-8 rounded-lg bg-gray-700/50 p-6">
-                  <h3 className="text-xl font-medium text-white">{currentStory.title}</h3>
-                  {currentStory.description && (
-                    <p className="mt-2 text-gray-300">{currentStory.description}</p>
-                  )}
-                </div>
-              ) : (
-                <div className="mb-8 rounded-lg bg-gray-700/50 p-6 text-center text-gray-400">
-                  No story selected
-                </div>
-              )}
-            </div>
-
             {/* Players around the table */}
-            <div className="relative mx-32 my-32">
-              {/* Top Players */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-4">
-                {users.slice(0, 3).map((user) => {
-                  const vote = votes.find(v => v.user_name === user)
-                  return (
-                    <div key={user} className="w-32 h-24">
-                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{user}</div>
-                      <div className={`card-flip relative h-16 ${room.show_votes && vote ? 'show-vote' : ''}`}>
-                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          {vote ? (
-                            <div className="w-8 h-12 rounded bg-indigo-600"></div>
-                          ) : (
-                            <div className="text-gray-500">No vote</div>
-                          )}
-                        </div>
-                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          <div className="text-3xl font-bold text-white">{vote?.vote_value || '-'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Left Players */}
-              <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-4">
-                {users.slice(3, 5).map((user) => {
-                  const vote = votes.find(v => v.user_name === user)
-                  return (
-                    <div key={user} className="w-32 h-24">
-                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{user}</div>
-                      <div className={`card-flip relative h-16 ${room.show_votes && vote ? 'show-vote' : ''}`}>
-                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          {vote ? (
-                            <div className="w-8 h-12 rounded bg-indigo-600"></div>
-                          ) : (
-                            <div className="text-gray-500">No vote</div>
-                          )}
-                        </div>
-                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          <div className="text-3xl font-bold text-white">{vote?.vote_value || '-'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Right Players */}
-              <div className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 flex flex-col gap-4">
-                {users.slice(5, 7).map((user) => {
-                  const vote = votes.find(v => v.user_name === user)
-                  return (
-                    <div key={user} className="w-32 h-24">
-                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{user}</div>
-                      <div className={`card-flip relative h-16 ${room.show_votes && vote ? 'show-vote' : ''}`}>
-                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          {vote ? (
-                            <div className="w-8 h-12 rounded bg-indigo-600"></div>
-                          ) : (
-                            <div className="text-gray-500">No vote</div>
-                          )}
-                        </div>
-                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          <div className="text-3xl font-bold text-white">{vote?.vote_value || '-'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Bottom Players */}
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 flex gap-4">
-                {users.slice(7, 10).map((user) => {
-                  const vote = votes.find(v => v.user_name === user)
-                  return (
-                    <div key={user} className="w-32 h-24">
-                      <div className="text-gray-300 font-medium text-center mb-2 truncate">{user}</div>
-                      <div className={`card-flip relative h-16 ${room.show_votes && vote ? 'show-vote' : ''}`}>
-                        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          {vote ? (
-                            <div className="w-8 h-12 rounded bg-indigo-600"></div>
-                          ) : (
-                            <div className="text-gray-500">No vote</div>
-                          )}
-                        </div>
-                        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-                          <div className="text-3xl font-bold text-white">{vote?.vote_value || '-'}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
+            <div className="poker-table-container">
               {/* The Table */}
-              <div className="rounded-xl bg-gradient-to-br from-emerald-900/50 to-teal-900/50 p-8 shadow-lg ring-1 ring-white/10">
+              <div className="poker-table">
                 {currentStory ? (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <h3 className="text-2xl font-bold text-white">{currentStory.title}</h3>
+                      <h3 className="text-2xl font-bold text-white">
+                        {currentStory.title}
+                      </h3>
                       {currentStory.description && (
-                        <p className="text-lg text-gray-300">{currentStory.description}</p>
+                        <p className="text-lg text-gray-300">
+                          {currentStory.description}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -651,18 +604,152 @@ export function Room() {
                   </div>
                 )}
               </div>
+
+              {/* Top Players */}
+              <div className="player-cards top">
+                {users.slice(0, 3).map((user) => (
+                  <div key={user} className="w-32">
+                    <div className="text-gray-300 font-medium text-center mb-2 truncate">
+                      {user}
+                    </div>
+                    <div
+                      className={`card-flip relative h-16 ${
+                        room.show_votes &&
+                        votes.find((v) => v.user_name === user)
+                          ? "show-vote"
+                          : ""
+                      }`}
+                    >
+                      <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        {votes.find((v) => v.user_name === user) ? (
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        ) : (
+                          <div className="text-gray-500">No vote</div>
+                        )}
+                      </div>
+                      <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        <div className="text-3xl font-bold text-white">
+                          {votes.find((v) => v.user_name === user)
+                            ?.vote_value || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Left Players */}
+              <div className="player-cards left">
+                {users.slice(3, 5).map((user) => (
+                  <div key={user} className="w-32">
+                    <div className="text-gray-300 font-medium text-center mb-2 truncate">
+                      {user}
+                    </div>
+                    <div
+                      className={`card-flip relative h-16 ${
+                        room.show_votes &&
+                        votes.find((v) => v.user_name === user)
+                          ? "show-vote"
+                          : ""
+                      }`}
+                    >
+                      <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        {votes.find((v) => v.user_name === user) ? (
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        ) : (
+                          <div className="text-gray-500">No vote</div>
+                        )}
+                      </div>
+                      <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        <div className="text-3xl font-bold text-white">
+                          {votes.find((v) => v.user_name === user)
+                            ?.vote_value || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Players */}
+              <div className="player-cards right">
+                {users.slice(5, 7).map((user) => (
+                  <div key={user} className="w-32">
+                    <div className="text-gray-300 font-medium text-center mb-2 truncate">
+                      {user}
+                    </div>
+                    <div
+                      className={`card-flip relative h-16 ${
+                        room.show_votes &&
+                        votes.find((v) => v.user_name === user)
+                          ? "show-vote"
+                          : ""
+                      }`}
+                    >
+                      <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        {votes.find((v) => v.user_name === user) ? (
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        ) : (
+                          <div className="text-gray-500">No vote</div>
+                        )}
+                      </div>
+                      <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        <div className="text-3xl font-bold text-white">
+                          {votes.find((v) => v.user_name === user)
+                            ?.vote_value || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Players */}
+              <div className="player-cards bottom">
+                {users.slice(7, 10).map((user) => (
+                  <div key={user} className="w-32">
+                    <div className="text-gray-300 font-medium text-center mb-2 truncate">
+                      {user}
+                    </div>
+                    <div
+                      className={`card-flip relative h-16 ${
+                        room.show_votes &&
+                        votes.find((v) => v.user_name === user)
+                          ? "show-vote"
+                          : ""
+                      }`}
+                    >
+                      <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        {votes.find((v) => v.user_name === user) ? (
+                          <div className="w-8 h-12 rounded bg-indigo-600"></div>
+                        ) : (
+                          <div className="text-gray-500">No vote</div>
+                        )}
+                      </div>
+                      <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
+                        <div className="text-3xl font-bold text-white">
+                          {votes.find((v) => v.user_name === user)
+                            ?.vote_value || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Voting Area */}
             {currentStory && (
-              <div className={`voting-area ${isLoading ? 'loading' : ''}`}>
+              <div className={`voting-area ${isLoading ? "loading" : ""}`}>
                 <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-medium text-gray-200">Your Vote</h4>
+                  <h4 className="text-lg font-medium text-gray-200">
+                    Your Vote
+                  </h4>
                   <button
                     onClick={handleToggleVotes}
                     className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
                   >
-                    {room.show_votes ? 'Hide Votes' : 'Show Votes'}
+                    {room.show_votes ? "Hide Votes" : "Show Votes"}
                   </button>
                 </div>
 
@@ -672,9 +759,10 @@ export function Room() {
                       key={value}
                       onClick={() => handleVote(value)}
                       className={`flex h-16 items-center justify-center rounded-lg text-xl font-semibold transition-colors
-                        ${selectedValue === value
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                        ${
+                          selectedValue === value
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                         }
                       `}
                     >
@@ -685,7 +773,7 @@ export function Room() {
 
                 {!room.show_votes && votes.length > 0 && (
                   <div className="text-center text-gray-400">
-                    {votes.length} vote{votes.length !== 1 ? 's' : ''} cast
+                    {votes.length} vote{votes.length !== 1 ? "s" : ""} cast
                   </div>
                 )}
               </div>
@@ -695,17 +783,42 @@ export function Room() {
       </div>
 
       {/* Story Management Sidebar */}
-      <div className={`sidebar-backdrop ${isSidebarOpen ? 'open' : ''}`} onClick={() => setIsSidebarOpen(false)} />
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+      <div
+        className={`sidebar-backdrop ${isSidebarOpen ? "open" : ""}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+      <div className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Stories</h2>
-            <button
-              onClick={() => setIsAddingStory(true)}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-            >
-              Add Story
-            </button>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">Stories</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsAddingStory(true)}
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              >
+                Add Story
+              </button>
+              <button
+                onClick={handleAnonymizeAllStories}
+                className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500 flex items-center gap-2"
+                title="Anonymize all stories"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                  />
+                </svg>
+                Anonymize All
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -713,22 +826,28 @@ export function Room() {
               <div
                 key={story.id}
                 className={`story-card rounded-lg p-4 transition-colors
-                  ${story.id.toString() === room.current_story
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                  ${
+                    story.id.toString() === room.current_story
+                      ? "bg-indigo-600 text-white"
+                      : "bg-gray-700 text-gray-200 hover:bg-gray-600"
                   }
-                  ${isLoading ? 'pointer-events-none opacity-50' : ''}
+                  ${isLoading ? "pointer-events-none opacity-50" : ""}
                 `}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h5 className="font-medium">{story.title}</h5>
                     {story.description && (
-                      <p className="mt-1 text-sm opacity-80">{story.description}</p>
+                      <p className="mt-1 text-sm opacity-80">
+                        {story.description}
+                      </p>
                     )}
                     {story.final_estimate && (
                       <p className="mt-2 text-sm">
-                        Final estimate: <span className="font-bold">{story.final_estimate}</span>
+                        Final estimate:{" "}
+                        <span className="font-bold">
+                          {story.final_estimate}
+                        </span>
                       </p>
                     )}
                   </div>
@@ -736,17 +855,41 @@ export function Room() {
                     <button
                       onClick={() => handleSelectStory(story.id)}
                       className={`rounded p-2 hover:bg-gray-600 ${
-                        story.id.toString() === room.current_story ? 'bg-indigo-700' : ''
+                        story.id.toString() === room.current_story
+                          ? "bg-indigo-700"
+                          : ""
                       }`}
-                      title={story.id.toString() === room.current_story ? "Current story" : "Select story"}
+                      title={
+                        story.id.toString() === room.current_story
+                          ? "Current story"
+                          : "Select story"
+                      }
                     >
                       {story.id.toString() === room.current_story ? (
-                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 011.06 1.06l6.25-6.25a.75.75 0 01.53-.53l3.5 3.5a.75.75 0 01-1.06 1.06l-6.25 6.25a.75.75 0 01-1.06-.53V19a.75.75 0 01.53-.53l6.25-6.25a.75.75 0 01.53.53z" clipRule="evenodd" />
+                        <svg
+                          className="h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M19.916 4.626a.75.75 0 011.04.208l9 13.5a.75.75 0 01-1.04 1.04l-6.25-6.25a.75.75 0 01-.53-.53l-3.5 3.5a.75.75 0 01-1.06 1.06l6.25 6.25a.75.75 0 01-1.06.53V19a.75.75 0 01.53-.53l6.25-6.25a.75.75 0 01.53-.53z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       ) : (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        <svg
+                          className="h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       )}
                     </button>
@@ -755,8 +898,37 @@ export function Room() {
                       className="rounded p-2 hover:bg-gray-600"
                       title="Edit story"
                     >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleAnonymizeStory(story.id)}
+                      className="rounded p-2 hover:bg-gray-600"
+                      title="Anonymize story"
+                    >
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -768,204 +940,152 @@ export function Room() {
       </div>
 
       {/* Modals */}
-      {isAddingStory && (
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
-            </div>
-
-            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-
-            <div className="inline-block transform overflow-hidden rounded-lg bg-gray-800 px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
-              <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                <button
-                  type="button"
-                  className="rounded-md bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
-                  onClick={() => setIsAddingStory(false)}
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleAddStory} className="space-y-4">
-                <div>
-                  <label htmlFor="storyTitle" className="block text-sm font-medium text-gray-200">
-                    Story Title
-                  </label>
-                  <input
-                    type="text"
-                    id="storyTitle"
-                    value={newStoryTitle}
-                    onChange={(e) => setNewStoryTitle(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Enter story title"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="storyDescription" className="block text-sm font-medium text-gray-200">
-                    Description (optional)
-                  </label>
-                  <textarea
-                    id="storyDescription"
-                    value={newStoryDescription}
-                    onChange={(e) => setNewStoryDescription(e.target.value)}
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Enter story description"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingStory(false)}
-                    className="rounded-md bg-gray-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                  >
-                    Add Story
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
       {editingStory && (
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
-            </div>
-
-            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-
-            <div className="inline-block transform overflow-hidden rounded-lg bg-gray-800 px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
-              <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                <button
-                  type="button"
-                  className="rounded-md bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
-                  onClick={() => setEditingStory(null)}
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleEditStory} className="space-y-4">
+        <>
+          <div className="modal-backdrop" onClick={() => setEditingStory(null)} />
+          <div className="modal">
+            <h3 className="text-xl font-medium text-white mb-4">Edit Story</h3>
+            <form onSubmit={handleEditStory}>
+              <div className="space-y-4">
                 <div>
-                  <label htmlFor="editStoryTitle" className="block text-sm font-medium text-gray-200">
-                    Story Title
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-300">
+                    Title
                   </label>
                   <input
                     type="text"
-                    id="editStoryTitle"
+                    id="title"
                     value={editingStory.title}
-                    onChange={(e) => setEditingStory({ ...editingStory, title: e.target.value })}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Enter story title"
+                    onChange={(e) =>
+                      setEditingStory({
+                        ...editingStory,
+                        title: e.target.value,
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
                 <div>
-                  <label htmlFor="editStoryDescription" className="block text-sm font-medium text-gray-200">
-                    Description (optional)
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-300">
+                    Description
                   </label>
                   <textarea
-                    id="editStoryDescription"
-                    value={editingStory.description || ''}
-                    onChange={(e) => setEditingStory({ ...editingStory, description: e.target.value })}
-                    rows={3}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Enter story description"
+                    id="description"
+                    value={editingStory.description || ""}
+                    onChange={(e) =>
+                      setEditingStory({
+                        ...editingStory,
+                        description: e.target.value,
+                      })
+                    }
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
+                    rows={12}
                   />
                 </div>
-                <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                  <button
-                    type="submit"
-                    className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 sm:col-start-2"
-                  >
-                    Save Changes
-                  </button>
+                <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-gray-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 sm:col-start-1 sm:mt-0"
                     onClick={() => setEditingStory(null)}
+                    className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
                   >
                     Cancel
                   </button>
+                  <button
+                    type="submit"
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                  >
+                    Save
+                  </button>
                 </div>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
-        </div>
+        </>
       )}
 
       {isUsernameModalOpen && (
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-900 opacity-75"></div>
-            </div>
-
-            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-
-            <div className="inline-block transform overflow-hidden rounded-lg bg-gray-800 px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
-              <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
-                <button
-                  type="button"
-                  className="rounded-md bg-gray-800 text-gray-400 hover:text-gray-500 focus:outline-none"
-                  onClick={() => setIsUsernameModalOpen(false)}
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleSetUsername} className="space-y-4">
+        <>
+          <div className="modal-backdrop" />
+          <div className="modal">
+            <h3 className="text-xl font-medium text-white mb-4">Enter Your Name</h3>
+            <form onSubmit={handleSetUsername}>
+              <div className="space-y-4">
                 <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-gray-200">
-                    Username
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-300">
+                    Name
                   </label>
                   <input
                     type="text"
                     id="username"
                     value={tempUserName}
                     onChange={(e) => setTempUserName(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Enter username"
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
+                    autoFocus
                   />
                 </div>
-                <div className="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
+                <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 sm:col-start-2"
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
                   >
-                    Set Username
+                    Join Room
                   </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+
+      {isAddingStory && (
+        <>
+          <div className="modal-backdrop" onClick={() => setIsAddingStory(false)} />
+          <div className="modal">
+            <h3 className="text-xl font-medium text-white mb-4">Add New Story</h3>
+            <form onSubmit={handleAddStory}>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="new-title" className="block text-sm font-medium text-gray-300">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    id="new-title"
+                    value={newStoryTitle}
+                    onChange={(e) => setNewStoryTitle(e.target.value)}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="new-description" className="block text-sm font-medium text-gray-300">
+                    Description
+                  </label>
+                  <textarea
+                    id="new-description"
+                    value={newStoryDescription}
+                    onChange={(e) => setNewStoryDescription(e.target.value)}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
+                    rows={12}
+                  />
+                </div>
+                <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-gray-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 sm:col-start-1 sm:mt-0"
-                    onClick={() => setIsUsernameModalOpen(false)}
+                    onClick={() => setIsAddingStory(false)}
+                    className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
                   >
                     Cancel
                   </button>
+                  <button
+                    type="submit"
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                  >
+                    Add Story
+                  </button>
                 </div>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

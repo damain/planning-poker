@@ -94,6 +94,30 @@ export async function editStory(storyId: number, updates: { title: string; descr
   return data
 }
 
+export async function anonymizeStory(storyId: number) {
+  const { error } = await supabase
+    .from('stories')
+    .update({
+      title: 'anonymized',
+      description: 'anonymized'
+    })
+    .eq('id', storyId)
+
+  if (error) throw error
+}
+
+export async function anonymizeAllStories(roomCode: string) {
+  const { error } = await supabase
+    .from('stories')
+    .update({
+      title: 'anonymized',
+      description: 'anonymized'
+    })
+    .eq('room_code', roomCode)
+
+  if (error) throw error
+}
+
 export async function setCurrentStory(roomCode: string, storyId: string | null) {
   const { error } = await supabase
     .from('rooms')
