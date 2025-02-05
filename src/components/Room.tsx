@@ -180,15 +180,16 @@ export function Room() {
           .eq('story_id', room.current_story)
 
         if (voteError) throw voteError
-        setVotes(voteData || [])
 
-        // Set selected value for current user
-        const userVote = voteData?.find(v => v.user_name === userName)
-        setSelectedValue(userVote?.vote_value || null)
+        // Only update votes if we're still on the same story
+        if (room.current_story === voteData?.[0]?.story_id) {
+          setVotes(voteData || [])
+          // Set selected value for current user
+          const userVote = voteData?.find(v => v.user_name === userName)
+          setSelectedValue(userVote?.vote_value || null)
+        }
       } catch (err) {
         console.error('Failed to load votes:', err)
-        setVotes([])
-        setSelectedValue(null)
       }
     }
 
@@ -197,6 +198,8 @@ export function Room() {
 
   useEffect(() => {
     if (!roomCode || !room) return;
+
+    let currentStoryId = room.current_story;
 
     const voteSubscription = supabase
       .channel('public:votes')
@@ -208,22 +211,23 @@ export function Room() {
           table: 'votes',
           filter: `room_code=eq.${roomCode}${room.current_story ? ` AND story_id=eq.${room.current_story}` : ''}`
         },
-        (payload) => {
-          console.log('Vote change event received:', payload)
-          
-          // Reload votes for current story
-          if (room.current_story) {
-            supabase
-              .from('votes')
-              .select('*')
-              .eq('room_code', roomCode)
-              .eq('story_id', room.current_story)
-              .then(({ data, error }) => {
-                if (!error && data) {
-                  console.log('Reloaded votes:', data)
-                  setVotes(data)
-                }
-              })
+        async (payload) => {
+          // Only process updates if we're still on the same story
+          if (currentStoryId === room.current_story) {
+            console.log('Vote change event received:', payload)
+            
+            if (room.current_story) {
+              const { data, error } = await supabase
+                .from('votes')
+                .select('*')
+                .eq('room_code', roomCode)
+                .eq('story_id', room.current_story)
+
+              if (!error && data) {
+                console.log('Reloaded votes:', data)
+                setVotes(data)
+              }
+            }
           }
         }
       )
@@ -233,12 +237,6 @@ export function Room() {
       voteSubscription.unsubscribe()
     }
   }, [roomCode, room])
-
-  useEffect(() => {
-    if (!userName) {
-      setIsUsernameModalOpen(true)
-    }
-  }, [userName])
 
   useEffect(() => {
     if (!roomCode || !userName) return
@@ -401,14 +399,15 @@ export function Room() {
   const handleSelectStory = async (storyId: number) => {
     try {
       setIsLoading(true);
-      await supabase
+      
+      // Keep old votes visible until new story is fully loaded
+      const { error } = await supabase
         .from('rooms')
         .update({ current_story: storyId })
         .eq('code', roomCode)
-      
-      // Clear existing votes when changing stories
-      setVotes([]);
-      setSelectedValue(null);
+
+      if (error) throw error;
+
     } catch (err) {
       console.error('Failed to select story:', err)
     } finally {
@@ -743,7 +742,7 @@ export function Room() {
                     >
                       {story.id.toString() === room.current_story ? (
                         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 011.06 1.06l6.25-6.25a.75.75 0 01.53-.53l3.5 3.5a.75.75 0 01-1.06 1.06l-6.25 6.25a.75.75 0 01-1.06-.53V19a.75.75 0 01.53-.53l6.25-6.25a.75.75 0 01.53.53z" clipRule="evenodd" />
                         </svg>
                       ) : (
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
