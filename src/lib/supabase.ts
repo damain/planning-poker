@@ -59,10 +59,14 @@ export const subscribeToRoom = (roomCode: string, callback: (payload: any) => vo
     .subscribe()
 }
 
-export async function createStory(roomCode: string, title: string, description?: string) {
+export async function createStory({ room_code, title, description }: {
+  room_code: string;
+  title: string;
+  description?: string;
+}) {
   const { data, error } = await supabase
     .from('stories')
-    .insert({ room_code: roomCode, title, description })
+    .insert({ room_code, title, description })
     .select()
     .single()
 
@@ -146,4 +150,72 @@ export async function setVotingScale(roomCode: string, scale: 'fibonacci' | 'lin
     .eq('code', roomCode)
 
   if (error) throw error
+}
+
+export async function addUserToRoom({ room_code, user_name, last_seen }: { 
+  room_code: string;
+  user_name: string;
+  last_seen: string;
+}) {
+  const { data, error } = await supabase
+    .from("room_users")
+    .insert({ room_code, user_name, last_seen })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateUserLastSeen({ room_code, user_name, last_seen }: {
+  room_code: string;
+  user_name: string;
+  last_seen: string;
+}) {
+  const { error } = await supabase
+    .from("room_users")
+    .update({ last_seen })
+    .eq("room_code", room_code)
+    .eq("user_name", user_name);
+
+  if (error) throw error;
+}
+
+export async function getUsers(room_code: string) {
+  const { data, error } = await supabase
+    .from("room_users")
+    .select("*")
+    .eq("room_code", room_code);
+
+  if (error) throw error;
+  return data;
+}
+
+export async function addVote({ room_code, story_id, user_name, vote_value }: {
+  room_code: string;
+  story_id: string;
+  user_name: string;
+  vote_value: number;
+}) {
+  // First check if a vote already exists
+  const { data: existingVote } = await supabase
+    .from("votes")
+    .select("id")
+    .eq("room_code", room_code)
+    .eq("story_id", story_id)
+    .eq("user_name", user_name)
+    .single();
+
+  if (existingVote) {
+    const { error } = await supabase
+      .from("votes")
+      .update({ vote_value })
+      .eq("id", existingVote.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("votes")
+      .insert({ room_code, story_id, user_name, vote_value });
+    if (error) throw error;
+  }
 }

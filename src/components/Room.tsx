@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
   supabase,
-  subscribeToRoom,
-  createStory,
-  setCurrentStory,
-  toggleShowVotes,
-  editStory,
+  addUserToRoom as addUser,
+  updateUserLastSeen,
+  addVote,
   anonymizeStory,
   anonymizeAllStories,
+  createStory,
+  toggleShowVotes,
   setVotingScale,
 } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
@@ -42,14 +42,19 @@ export function Room() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const calculateVoteStats = (votes: Vote[]) => {
-    if (!votes || votes.length === 0) return null;
-    
-    const numericVotes = votes.map(v => v.vote_value);
+  const calculateStatistics = (votes: Vote[]) => {
+    const numericVotes = votes
+      .map((v) => v.vote_value)
+      .filter((v): v is number => v !== null);
+
+    if (numericVotes.length === 0) {
+      return { optimistic: 0, pessimistic: 0, likely: 0 };
+    }
+
     const optimistic = Math.min(...numericVotes);
     const pessimistic = Math.max(...numericVotes);
     const likely = Math.round(numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length);
-    
+
     return { optimistic, pessimistic, likely };
   };
 
@@ -260,18 +265,18 @@ export function Room() {
         const userNames = existingUsers?.map((u) => u.user_name).sort() || [];
 
         if (!userNames.includes(userName)) {
-          await supabase.from("room_users").insert({
+          await addUser({
             room_code: roomCode,
             user_name: userName,
             last_seen: new Date().toISOString(),
           });
         } else {
           // Update last_seen
-          await supabase
-            .from("room_users")
-            .update({ last_seen: new Date().toISOString() })
-            .eq("room_code", roomCode)
-            .eq("user_name", userName);
+          await updateUserLastSeen({
+            room_code: roomCode,
+            user_name: userName,
+            last_seen: new Date().toISOString(),
+          });
         }
 
         setUsers(
@@ -289,11 +294,11 @@ export function Room() {
     // Keep user's last_seen timestamp updated
     const interval = setInterval(async () => {
       try {
-        await supabase
-          .from("room_users")
-          .update({ last_seen: new Date().toISOString() })
-          .eq("room_code", roomCode)
-          .eq("user_name", userName);
+        await updateUserLastSeen({
+          room_code: roomCode,
+          user_name: userName,
+          last_seen: new Date().toISOString(),
+        });
       } catch (err) {
         console.error("Failed to update last_seen:", err);
       }
@@ -350,67 +355,44 @@ export function Room() {
   };
 
   const handleVote = async (value: number) => {
+    if (!roomCode || !room?.current_story) return;
+
     try {
-      const { data: existingVote } = await supabase
-        .from("votes")
-        .select("id")
-        .eq("room_code", roomCode)
-        .eq("story_id", room.current_story)
-        .eq("user_name", userName)
-        .single();
-
-      if (existingVote) {
-        await supabase
-          .from("votes")
-          .update({ vote_value: value })
-          .eq("id", existingVote.id);
-      } else {
-        await supabase.from("votes").insert({
-          room_code: roomCode,
-          story_id: room.current_story,
-          user_name: userName,
-          vote_value: value,
-        });
-      }
-
+      await addVote({
+        room_code: roomCode,
+        story_id: room.current_story,
+        user_name: userName,
+        vote_value: value,
+      });
       setSelectedValue(value);
     } catch (err) {
-      setError("Failed to submit vote");
-      console.error(err);
+      console.error("Failed to submit vote:", err);
+      toast.error("Failed to submit vote");
     }
   };
 
-  const handleAddStory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStoryTitle.trim()) {
-      setError("Story title is required");
+  const handleAddStory = async () => {
+    if (!roomCode || !newStoryTitle.trim()) {
+      toast.error("Room code and story title are required");
       return;
     }
 
     try {
-      const { data: story, error } = await supabase
-        .from("stories")
-        .insert({
-          room_code: roomCode,
-          title: newStoryTitle,
-          description: newStoryDescription,
-        })
-        .select()
-        .single();
+      const { error } = await createStory({
+        room_code: roomCode,
+        title: newStoryTitle.trim(),
+        description: newStoryDescription.trim() || undefined,
+      });
 
       if (error) throw error;
 
       setNewStoryTitle("");
       setNewStoryDescription("");
       setIsAddingStory(false);
-
-      // If no current story is selected, set this as current
-      if (!room?.current_story && story) {
-        await setCurrentStory(roomCode!, story.id.toString());
-      }
+      toast.success("Story added successfully");
     } catch (err) {
-      setError("Failed to create story");
-      console.error(err);
+      console.error("Failed to add story:", err);
+      toast.error("Failed to add story");
     }
   };
 
@@ -442,24 +424,25 @@ export function Room() {
     }
   };
 
-  const handleEditStory = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditStory = async () => {
     if (!editingStory) return;
 
-    if (!editingStory.title.trim()) {
-      setError("Story title is required");
-      return;
-    }
-
     try {
-      await editStory(editingStory.id, {
-        title: editingStory.title,
-        description: editingStory.description || undefined,
-      });
+      const { error } = await supabase
+        .from("stories")
+        .update({
+          title: editingStory.title,
+          description: editingStory.description,
+        })
+        .eq("id", editingStory.id);
+
+      if (error) throw error;
+
       setEditingStory(null);
+      toast.success("Story updated successfully");
     } catch (err) {
-      setError("Failed to update story");
-      console.error(err);
+      console.error("Failed to update story:", err);
+      toast.error("Failed to update story");
     }
   };
 
@@ -793,19 +776,19 @@ export function Room() {
                         <div className="flex items-center gap-2 rounded-lg bg-green-900/50 px-3 py-2">
                           <div className="text-sm text-green-300">Optimistic</div>
                           <div className="text-lg font-semibold text-green-100">
-                            {calculateVoteStats(votes)?.optimistic || '-'}
+                            {calculateStatistics(votes)?.optimistic || '-'}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 rounded-lg bg-blue-900/50 px-3 py-2">
                           <div className="text-sm text-blue-300">Likely</div>
                           <div className="text-lg font-semibold text-blue-100">
-                            {calculateVoteStats(votes)?.likely || '-'}
+                            {calculateStatistics(votes)?.likely || '-'}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 rounded-lg bg-red-900/50 px-3 py-2">
                           <div className="text-sm text-red-300">Pessimistic</div>
                           <div className="text-lg font-semibold text-red-100">
-                            {calculateVoteStats(votes)?.pessimistic || '-'}
+                            {calculateStatistics(votes)?.pessimistic || '-'}
                           </div>
                         </div>
                       </div>
