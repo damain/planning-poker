@@ -190,11 +190,7 @@ export function Room() {
   }, [roomCode, room]);
 
   useEffect(() => {
-    if (!roomCode || !room?.current_story) {
-      setVotes([]);
-      setSelectedValue(null);
-      return;
-    }
+    if (!roomCode || !room?.current_story) return;
 
     const loadVotes = async () => {
       try {
@@ -205,27 +201,19 @@ export function Room() {
           .eq("story_id", room.current_story);
 
         if (voteError) throw voteError;
-
-        // Only update votes if we're still on the same story
-        if (room.current_story === voteData?.[0]?.story_id) {
-          setVotes(voteData || []);
-          // Set selected value for current user
-          const userVote = voteData?.find((v) => v.user_name === userName);
-          setSelectedValue(userVote?.vote_value || null);
-        }
+        setVotes(voteData || []);
+        
+        // Update selected value for current user
+        const userVote = voteData?.find((v) => v.user_name === userName);
+        setSelectedValue(userVote?.vote_value || null);
       } catch (err) {
         console.error("Failed to load votes:", err);
       }
     };
 
     loadVotes();
-  }, [roomCode, room?.current_story, userName]);
 
-  useEffect(() => {
-    if (!roomCode || !room) return;
-
-    let currentStoryId = room.current_story;
-
+    // Subscribe to vote changes
     const voteSubscription = supabase
       .channel("public:votes")
       .on(
@@ -234,27 +222,20 @@ export function Room() {
           event: "*",
           schema: "public",
           table: "votes",
-          filter: `room_code=eq.${roomCode}${
-            room.current_story ? ` AND story_id=eq.${room.current_story}` : ""
-          }`,
+          filter: `room_code=eq.${roomCode} AND story_id=eq.${room.current_story}`,
         },
-        async (payload) => {
-          // Only process updates if we're still on the same story
-          if (currentStoryId === room.current_story) {
-            console.log("Vote change event received:", payload);
+        async () => {
+          const { data, error } = await supabase
+            .from("votes")
+            .select("*")
+            .eq("room_code", roomCode)
+            .eq("story_id", room.current_story);
 
-            if (room.current_story) {
-              const { data, error } = await supabase
-                .from("votes")
-                .select("*")
-                .eq("room_code", roomCode)
-                .eq("story_id", room.current_story);
-
-              if (!error && data) {
-                console.log("Reloaded votes:", data);
-                setVotes(data);
-              }
-            }
+          if (!error && data) {
+            setVotes(data);
+            // Update selected value when votes change
+            const userVote = data.find((v) => v.user_name === userName);
+            setSelectedValue(userVote?.vote_value || null);
           }
         }
       )
@@ -263,13 +244,7 @@ export function Room() {
     return () => {
       voteSubscription.unsubscribe();
     };
-  }, [roomCode, room]);
-
-  useEffect(() => {
-    if (!userName) {
-      setIsUsernameModalOpen(true);
-    }
-  }, [userName]);
+  }, [roomCode, room?.current_story, userName]);
 
   useEffect(() => {
     if (!roomCode || !userName) return;
@@ -353,6 +328,12 @@ export function Room() {
       userSubscription.unsubscribe();
     };
   }, [roomCode, userName]);
+
+  useEffect(() => {
+    if (!userName) {
+      setIsUsernameModalOpen(true);
+    }
+  }, [userName]);
 
   const handleSetUsername = (e: React.FormEvent) => {
     e.preventDefault();
