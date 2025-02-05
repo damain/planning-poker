@@ -18,6 +18,7 @@ export interface Database {
           active: boolean
           current_story: string | null
           show_votes: boolean
+          voting_scale: 'fibonacci' | 'linear' | null
         }
         Insert: {
           id?: number
@@ -27,6 +28,7 @@ export interface Database {
           active?: boolean
           current_story?: string | null
           show_votes?: boolean
+          voting_scale?: 'fibonacci' | 'linear' | null
         }
         Update: {
           id?: number
@@ -36,6 +38,7 @@ export interface Database {
           active?: boolean
           current_story?: string | null
           show_votes?: boolean
+          voting_scale?: 'fibonacci' | 'linear' | null
         }
       }
       room_users: {

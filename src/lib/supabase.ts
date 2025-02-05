@@ -138,3 +138,12 @@ export async function toggleShowVotes(roomCode: string, show: boolean) {
 
   if (error) throw error
 }
+
+export async function setVotingScale(roomCode: string, scale: 'fibonacci' | 'linear') {
+  const { error } = await supabase
+    .from('rooms')
+    .update({ voting_scale: scale })
+    .eq('code', roomCode)
+
+  if (error) throw error
+}

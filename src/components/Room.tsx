@@ -9,6 +9,7 @@ import {
   editStory,
   anonymizeStory,
   anonymizeAllStories,
+  setVotingScale,
 } from "../lib/supabase";
 import type { Database } from "../lib/database.types";
 import toast, { Toaster } from "react-hot-toast";
@@ -18,6 +19,7 @@ type Vote = Database["public"]["Tables"]["votes"]["Row"];
 type Story = Database["public"]["Tables"]["stories"]["Row"];
 
 const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21];
+const LINEAR_NUMBERS = [1, 2, 3, 4, 5, 10, 15, 20, 25];
 
 export function Room() {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -38,6 +40,17 @@ export function Room() {
   const [users, setUsers] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const calculateVoteStats = (votes: Vote[]) => {
+    if (!votes || votes.length === 0) return null;
+    
+    const numericVotes = votes.map(v => v.vote_value);
+    const optimistic = Math.min(...numericVotes);
+    const pessimistic = Math.max(...numericVotes);
+    const likely = Math.round(numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length);
+    
+    return { optimistic, pessimistic, likely };
+  };
 
   useEffect(() => {
     if (!roomCode) return;
@@ -495,6 +508,16 @@ export function Room() {
     }
   };
 
+  const handleSetVotingScale = async (scale: 'fibonacci' | 'linear') => {
+    try {
+      await setVotingScale(roomCode!, scale);
+      toast.success(`Voting scale updated to ${scale}`);
+    } catch (err) {
+      console.error('Failed to update voting scale:', err);
+      toast.error('Failed to update voting scale');
+    }
+  };
+
   const copyRoomLink = async () => {
     try {
       // Create a clean URL without the username parameter
@@ -745,30 +768,87 @@ export function Room() {
             {/* Voting Area */}
             {currentStory && (
               <div className={`voting-area ${isLoading ? "loading" : ""}`}>
-                <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-medium text-gray-200">
-                    Your Vote
-                  </h4>
-                  <button
-                    onClick={handleToggleVotes}
-                    className="rounded-lg mb-2 bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                  >
-                    {room.show_votes ? "Hide Votes" : "Show Votes"}
-                  </button>
+                <div className="h-6 flex items-center justify-between">
+                  <div className="text-sm text-gray-400">
+                    {votes.length} {votes.length === 1 ? "vote" : "votes"}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    {!room.show_votes && votes.length > 0 && (
+                      <span>🔒</span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-7">
-                  {FIBONACCI_NUMBERS.map((value) => (
+                <div className="mt-4 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-lg font-medium text-gray-200">
+                      Your Vote
+                    </h4>
+                    <div className="mt-2 flex items-center gap-4">
+                      <button
+                        onClick={() => handleSetVotingScale('fibonacci')}
+                        className={`text-sm px-3 py-1 rounded ${
+                          room.voting_scale === 'fibonacci' || !room.voting_scale
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        Fibonacci
+                      </button>
+                      <button
+                        onClick={() => handleSetVotingScale('linear')}
+                        className={`text-sm px-3 py-1 rounded ${
+                          room.voting_scale === 'linear'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        Linear
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {room.show_votes && (
+                      <div className="flex gap-4">
+                        <div className="flex items-center gap-2 rounded-lg bg-green-900/50 px-3 py-2">
+                          <div className="text-sm text-green-300">Optimistic</div>
+                          <div className="text-lg font-semibold text-green-100">
+                            {calculateVoteStats(votes)?.optimistic || '-'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg bg-blue-900/50 px-3 py-2">
+                          <div className="text-sm text-blue-300">Likely</div>
+                          <div className="text-lg font-semibold text-blue-100">
+                            {calculateVoteStats(votes)?.likely || '-'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg bg-red-900/50 px-3 py-2">
+                          <div className="text-sm text-red-300">Pessimistic</div>
+                          <div className="text-lg font-semibold text-red-100">
+                            {calculateVoteStats(votes)?.pessimistic || '-'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      onClick={handleToggleVotes}
+                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                    >
+                      {room.show_votes ? "Hide Votes" : "Show Votes"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-1 mt-6">
+                  {(room.voting_scale === 'linear' ? LINEAR_NUMBERS : FIBONACCI_NUMBERS).map((value) => (
                     <button
                       key={value}
                       onClick={() => handleVote(value)}
-                      className={`flex h-16 items-center justify-center rounded-lg text-xl font-semibold transition-colors
-                        ${
-                          selectedValue === value
-                            ? "bg-indigo-600 text-white"
-                            : "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                        }
-                      `}
+                      className={`rounded-lg px-2 py-2 text-sm font-medium ${
+                        selectedValue === value
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      }`}
                     >
                       {value}
                     </button>
