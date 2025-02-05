@@ -471,23 +471,27 @@ export function Room() {
   const handleAnonymizeStory = async (storyId: number) => {
     try {
       await anonymizeStory(storyId);
-      toast.success('Story anonymized successfully');
+      toast.success("Story anonymized successfully");
     } catch (err) {
-      console.error('Failed to anonymize story:', err);
-      toast.error('Failed to anonymize story');
+      console.error("Failed to anonymize story:", err);
+      toast.error("Failed to anonymize story");
     }
   };
 
   const handleAnonymizeAllStories = async () => {
-    if (!confirm('Are you sure you want to anonymize all stories? This cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to anonymize all stories? This cannot be undone."
+      )
+    ) {
       return;
     }
     try {
       await anonymizeAllStories(roomCode);
-      toast.success('All stories anonymized successfully');
+      toast.success("All stories anonymized successfully");
     } catch (err) {
-      console.error('Failed to anonymize stories:', err);
-      toast.error('Failed to anonymize stories');
+      console.error("Failed to anonymize stories:", err);
+      toast.error("Failed to anonymize stories");
     }
   };
 
@@ -747,7 +751,7 @@ export function Room() {
                   </h4>
                   <button
                     onClick={handleToggleVotes}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                    className="rounded-lg mb-2 bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
                   >
                     {room.show_votes ? "Hide Votes" : "Show Votes"}
                   </button>
@@ -942,13 +946,19 @@ export function Room() {
       {/* Modals */}
       {editingStory && (
         <>
-          <div className="modal-backdrop" onClick={() => setEditingStory(null)} />
+          <div
+            className="modal-backdrop"
+            onClick={() => setEditingStory(null)}
+          />
           <div className="modal">
             <h3 className="text-xl font-medium text-white mb-4">Edit Story</h3>
             <form onSubmit={handleEditStory}>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="title"
+                    className="block text-sm font-medium text-gray-300"
+                  >
                     Title
                   </label>
                   <input
@@ -965,7 +975,10 @@ export function Room() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="description"
+                    className="block text-sm font-medium text-gray-300"
+                  >
                     Description
                   </label>
                   <textarea
@@ -1006,11 +1019,16 @@ export function Room() {
         <>
           <div className="modal-backdrop" />
           <div className="modal">
-            <h3 className="text-xl font-medium text-white mb-4">Enter Your Name</h3>
+            <h3 className="text-xl font-medium text-white mb-4">
+              Enter Your Name
+            </h3>
             <form onSubmit={handleSetUsername}>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="username" className="block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="username"
+                    className="block text-sm font-medium text-gray-300"
+                  >
                     Name
                   </label>
                   <input
@@ -1038,13 +1056,21 @@ export function Room() {
 
       {isAddingStory && (
         <>
-          <div className="modal-backdrop" onClick={() => setIsAddingStory(false)} />
+          <div
+            className="modal-backdrop"
+            onClick={() => setIsAddingStory(false)}
+          />
           <div className="modal">
-            <h3 className="text-xl font-medium text-white mb-4">Add New Story</h3>
+            <h3 className="text-xl font-medium text-white mb-4">
+              Add New Story
+            </h3>
             <form onSubmit={handleAddStory}>
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="new-title" className="block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="new-title"
+                    className="block text-sm font-medium text-gray-300"
+                  >
                     Title
                   </label>
                   <input
@@ -1056,7 +1082,10 @@ export function Room() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="new-description" className="block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="new-description"
+                    className="block text-sm font-medium text-gray-300"
+                  >
                     Description
                   </label>
                   <textarea
