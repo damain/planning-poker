@@ -53,7 +53,9 @@ export function Room() {
 
     const optimistic = Math.min(...numericVotes);
     const pessimistic = Math.max(...numericVotes);
-    const likely = Math.round(numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length);
+    const likely = Math.round(
+      numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length
+    );
 
     return { optimistic, pessimistic, likely };
   };
@@ -207,7 +209,7 @@ export function Room() {
 
         if (voteError) throw voteError;
         setVotes(voteData || []);
-        
+
         // Update selected value for current user
         const userVote = voteData?.find((v) => v.user_name === userName);
         setSelectedValue(userVote?.vote_value || null);
@@ -471,13 +473,13 @@ export function Room() {
     }
   };
 
-  const handleSetVotingScale = async (scale: 'fibonacci' | 'linear') => {
+  const handleSetVotingScale = async (scale: "fibonacci" | "linear") => {
     try {
       await setVotingScale(roomCode!, scale);
       toast.success(`Voting scale updated to ${scale}`);
     } catch (err) {
-      console.error('Failed to update voting scale:', err);
-      toast.error('Failed to update voting scale');
+      console.error("Failed to update voting scale:", err);
+      toast.error("Failed to update voting scale");
     }
   };
 
@@ -538,7 +540,7 @@ export function Room() {
                     fill="currentColor"
                   >
                     <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                    <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                   </svg>
                   Share Room
                 </button>
@@ -736,9 +738,7 @@ export function Room() {
                     {votes.length} {votes.length === 1 ? "vote" : "votes"}
                   </div>
                   <div className="text-sm text-gray-400">
-                    {!room.show_votes && votes.length > 0 && (
-                      <span>🔒</span>
-                    )}
+                    {!room.show_votes && votes.length > 0 && <span>🔒</span>}
                   </div>
                 </div>
 
@@ -749,21 +749,22 @@ export function Room() {
                     </h4>
                     <div className="mt-2 flex items-center gap-4">
                       <button
-                        onClick={() => handleSetVotingScale('fibonacci')}
+                        onClick={() => handleSetVotingScale("fibonacci")}
                         className={`text-sm px-3 py-1 rounded ${
-                          room.voting_scale === 'fibonacci' || !room.voting_scale
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          room.voting_scale === "fibonacci" ||
+                          !room.voting_scale
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                         }`}
                       >
                         Fibonacci
                       </button>
                       <button
-                        onClick={() => handleSetVotingScale('linear')}
+                        onClick={() => handleSetVotingScale("linear")}
                         className={`text-sm px-3 py-1 rounded ${
-                          room.voting_scale === 'linear'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          room.voting_scale === "linear"
+                            ? "bg-indigo-600 text-white"
+                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                         }`}
                       >
                         Linear
@@ -774,21 +775,25 @@ export function Room() {
                     {room.show_votes && (
                       <div className="flex gap-4">
                         <div className="flex items-center gap-2 rounded-lg bg-green-900/50 px-3 py-2">
-                          <div className="text-sm text-green-300">Optimistic</div>
+                          <div className="text-sm text-green-300">
+                            Optimistic
+                          </div>
                           <div className="text-lg font-semibold text-green-100">
-                            {calculateStatistics(votes)?.optimistic || '-'}
+                            {calculateStatistics(votes)?.optimistic || "-"}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 rounded-lg bg-blue-900/50 px-3 py-2">
                           <div className="text-sm text-blue-300">Likely</div>
                           <div className="text-lg font-semibold text-blue-100">
-                            {calculateStatistics(votes)?.likely || '-'}
+                            {calculateStatistics(votes)?.likely || "-"}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 rounded-lg bg-red-900/50 px-3 py-2">
-                          <div className="text-sm text-red-300">Pessimistic</div>
+                          <div className="text-sm text-red-300">
+                            Pessimistic
+                          </div>
                           <div className="text-lg font-semibold text-red-100">
-                            {calculateStatistics(votes)?.pessimistic || '-'}
+                            {calculateStatistics(votes)?.pessimistic || "-"}
                           </div>
                         </div>
                       </div>
@@ -803,7 +808,10 @@ export function Room() {
                 </div>
 
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-1 mt-6">
-                  {(room.voting_scale === 'linear' ? LINEAR_NUMBERS : FIBONACCI_NUMBERS).map((value) => (
+                  {(room.voting_scale === "linear"
+                    ? LINEAR_NUMBERS
+                    : FIBONACCI_NUMBERS
+                  ).map((value) => (
                     <button
                       key={value}
                       onClick={() => handleVote(value)}
@@ -842,8 +850,18 @@ export function Room() {
                 onClick={() => setIsSidebarOpen(false)}
                 className="p-2 rounded-full hover:bg-gray-700 text-gray-400 hover:text-white"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
               <h2 className="text-xl font-semibold text-white">Stories</h2>
@@ -911,48 +929,47 @@ export function Room() {
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => handleSelectStory(story.id)}
-                      className={`rounded p-2 hover:bg-gray-600 ${
+                      className={`rounded-md p-1 ${
                         story.id.toString() === room.current_story
-                          ? "bg-indigo-700"
-                          : ""
+                          ? "cursor-default"
+                          : "hover:bg-gray-700"
                       }`}
+                      disabled={story.id.toString() === room.current_story}
                       title={
                         story.id.toString() === room.current_story
-                          ? "Current story"
-                          : "Select story"
+                          ? "Current active story"
+                          : "Set as active story"
                       }
                     >
                       {story.id.toString() === room.current_story ? (
                         <svg
-                          className="h-8 w-8"
+                          className="h-8 w-8 text-gray-400"
                           viewBox="0 0 20 20"
                           fill="currentColor"
                         >
                           <path
                             fillRule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                             clipRule="evenodd"
                           />
                         </svg>
                       ) : (
                         <svg
-                          className="h-8 w-8"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
+                          className="h-8 w-8 text-indigo-500 hover:text-indigo-400"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
                         >
                           <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M9 5l7 7-7 7"
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
                           />
                         </svg>
                       )}
                     </button>
                     <button
                       onClick={() => setEditingStory(story)}
-                      className="rounded p-2 hover:bg-gray-600"
+                      className="rounded p-2 hover:bg-gray-700"
                       title="Edit story"
                     >
                       <svg
@@ -971,7 +988,7 @@ export function Room() {
                     </button>
                     <button
                       onClick={() => handleAnonymizeStory(story.id)}
-                      className="rounded p-2 hover:bg-gray-600"
+                      className="rounded p-2 hover:bg-gray-700"
                       title="Anonymize story"
                     >
                       <svg
@@ -1004,7 +1021,9 @@ export function Room() {
               Confirm Anonymize All Stories
             </h3>
             <p className="text-gray-300 mb-6">
-              This action will permanently anonymize all stories in this room by removing their titles and descriptions. This change will be saved to the database and cannot be undone.
+              This action will permanently anonymize all stories in this room by
+              removing their titles and descriptions. This change will be saved
+              to the database and cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -1024,27 +1043,89 @@ export function Room() {
         </div>
       )}
 
-      {/* Modals */}
-      {editingStory && (
-        <>
-          <div
-            className="modal-backdrop"
-            onClick={() => setEditingStory(null)}
-          />
-          <div className="modal">
-            <h3 className="text-xl font-medium text-white mb-4">Edit Story</h3>
-            <form onSubmit={handleEditStory}>
+      {/* Add Story Modal */}
+      {isAddingStory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Add New Story
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddStory();
+              }}
+            >
               <div className="space-y-4">
                 <div>
-                  <label
-                    htmlFor="title"
-                    className="block text-sm font-medium text-gray-300"
-                  >
+                  <label className="block text-sm font-medium text-gray-300">
                     Title
                   </label>
                   <input
                     type="text"
-                    id="title"
+                    value={newStoryTitle}
+                    onChange={(e) => setNewStoryTitle(e.target.value)}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Enter story title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">
+                    Description
+                  </label>
+                  <textarea
+                    value={newStoryDescription}
+                    onChange={(e) => setNewStoryDescription(e.target.value)}
+                    rows={3}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Enter story description"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewStoryTitle("");
+                    setNewStoryDescription("");
+                    setIsAddingStory(false);
+                  }}
+                  className="px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-500"
+                >
+                  Add Story
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Story Modal */}
+      {editingStory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Edit Story
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleEditStory();
+              }}
+            >
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">
+                    Title
+                  </label>
+                  <input
+                    type="text"
                     value={editingStory.title}
                     onChange={(e) =>
                       setEditingStory({
@@ -1052,18 +1133,15 @@ export function Room() {
                         title: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Enter story title"
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium text-gray-300"
-                  >
+                  <label className="block text-sm font-medium text-gray-300">
                     Description
                   </label>
                   <textarea
-                    id="description"
                     value={editingStory.description || ""}
                     onChange={(e) =>
                       setEditingStory({
@@ -1071,29 +1149,30 @@ export function Room() {
                         description: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
-                    rows={12}
+                    rows={3}
+                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    placeholder="Enter story description"
                   />
                 </div>
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditingStory(null)}
-                    className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                  >
-                    Save
-                  </button>
-                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingStory(null)}
+                  className="px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-500"
+                >
+                  Save Changes
+                </button>
               </div>
             </form>
           </div>
-        </>
+        </div>
       )}
 
       {isUsernameModalOpen && (
@@ -1127,69 +1206,6 @@ export function Room() {
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
                   >
                     Join Room
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </>
-      )}
-
-      {isAddingStory && (
-        <>
-          <div
-            className="modal-backdrop"
-            onClick={() => setIsAddingStory(false)}
-          />
-          <div className="modal">
-            <h3 className="text-xl font-medium text-white mb-4">
-              Add New Story
-            </h3>
-            <form onSubmit={handleAddStory}>
-              <div className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="new-title"
-                    className="block text-sm font-medium text-gray-300"
-                  >
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    id="new-title"
-                    value={newStoryTitle}
-                    onChange={(e) => setNewStoryTitle(e.target.value)}
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="new-description"
-                    className="block text-sm font-medium text-gray-300"
-                  >
-                    Description
-                  </label>
-                  <textarea
-                    id="new-description"
-                    value={newStoryDescription}
-                    onChange={(e) => setNewStoryDescription(e.target.value)}
-                    className="mt-1 block w-full rounded-md bg-gray-700 border-gray-600 text-white focus:border-indigo-500 focus:ring-indigo-500"
-                    rows={12}
-                  />
-                </div>
-                <div className="flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingStory(false)}
-                    className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-500"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                  >
-                    Add Story
                   </button>
                 </div>
               </div>
