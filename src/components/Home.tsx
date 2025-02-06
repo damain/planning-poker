@@ -1,11 +1,23 @@
 import { useState } from 'react'
-import { createRoom, joinRoom } from '../lib/supabase'
+import { createRoom, joinRoom, supabase } from '../lib/supabase'
 
 export function Home() {
   const [userName, setUserName] = useState('')
   const [roomName, setRoomName] = useState('')
   const [roomCode, setRoomCode] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const checkUsernameAvailability = async (roomCode: string, userName: string) => {
+    const { data } = await supabase
+      .from('room_users')
+      .select('user_name')
+      .eq('room_code', roomCode)
+      .eq('user_name', userName)
+      .single();
+
+    return !data; // If no data is found, username is available
+  };
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -13,12 +25,24 @@ export function Home() {
       setError('Please fill in all fields')
       return
     }
+
+    setIsLoading(true)
     try {
       const room = await createRoom(roomName)
+      
+      // Check if username is available in the new room
+      const isAvailable = await checkUsernameAvailability(room.code, userName)
+      if (!isAvailable) {
+        setError('Username is already taken in this room')
+        return
+      }
+
       window.location.href = `/room/${room.code}?user=${encodeURIComponent(userName)}`
     } catch (err) {
       setError('Failed to create room')
       console.error(err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -28,12 +52,23 @@ export function Home() {
       setError('Please fill in all fields')
       return
     }
+
+    setIsLoading(true)
     try {
+      // First check if username is available
+      const isAvailable = await checkUsernameAvailability(roomCode, userName)
+      if (!isAvailable) {
+        setError('Username is already taken in this room')
+        return
+      }
+
       await joinRoom(roomCode)
       window.location.href = `/room/${roomCode}?user=${encodeURIComponent(userName)}`
     } catch (err) {
       setError('Room not found or inactive')
       console.error(err)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -100,9 +135,12 @@ export function Home() {
                 </div>
                 <button
                   type="submit"
-                  className="mt-4 w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                  disabled={isLoading}
+                  className={`mt-4 flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Create Room
+                  {isLoading ? 'Creating...' : 'Create Room'}
                 </button>
               </form>
             </div>
@@ -135,9 +173,12 @@ export function Home() {
                 </div>
                 <button
                   type="submit"
-                  className="mt-4 w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                  disabled={isLoading}
+                  className={`mt-4 flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  Join Room
+                  {isLoading ? 'Joining...' : 'Join Room'}
                 </button>
               </form>
             </div>
