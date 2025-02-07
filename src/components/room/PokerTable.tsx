@@ -1,4 +1,3 @@
-import { useParams } from "react-router-dom";
 import type { Database } from "../../lib/database.types";
 import { PlayingCard } from "./PlayingCard";
 
