@@ -37,7 +37,7 @@ export function Room() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
   const [tempUserName, setTempUserName] = useState("");
-
+  console.log({ roomCode });
   useEffect(() => {
     if (!roomCode) return;
     const loadRoom = async () => {
@@ -95,7 +95,7 @@ export function Room() {
           console.log("Room change event received:", payload);
           const newRoom = payload.new as Room;
           setRoom(newRoom);
-          
+
           // If current story changed, reload votes for the new story
           if (newRoom.current_story) {
             supabase
@@ -156,8 +156,12 @@ export function Room() {
 
   // Separate useEffect for vote subscription to handle current story changes
   useEffect(() => {
-    if (!roomCode || !room?.current_story) return;
+    if (!roomCode || !room?.current_story) {
+      console.log("No current story, not subscribing to votes");
+      return;
+    }
 
+    console.log("Setting up vote subscription for story:", room.current_story);
     // Subscribe to vote changes for the current story
     const voteSubscription = supabase
       .channel(`public:votes:${room.current_story}`)
@@ -167,7 +171,7 @@ export function Room() {
           event: "*",
           schema: "public",
           table: "votes",
-          filter: `room_code=eq.${roomCode} AND story_id=eq.${room.current_story}`,
+          filter: `room_code=eq.${roomCode}`,
         },
         (payload) => {
           console.log("Vote change event received:", payload);
@@ -187,6 +191,7 @@ export function Room() {
       .subscribe();
 
     return () => {
+      console.log("Cleaning up vote subscription");
       voteSubscription.unsubscribe();
     };
   }, [roomCode, room?.current_story]);
@@ -328,30 +333,31 @@ export function Room() {
   };
 
   // Memoize the vote handler
-  const handleVote = useCallback(async (value: number) => {
-    if (!roomCode || !room?.current_story) return;
+  const handleVote = useCallback(
+    async (value: number) => {
+      if (!roomCode || !room?.current_story) return;
 
-    try {
-      const newVote = {
-        room_code: roomCode,
-        story_id: room.current_story,
-        user_name: userName,
-        vote_value: value,
-      };
+      try {
+        const newVote = {
+          room_code: roomCode,
+          story_id: room.current_story,
+          user_name: userName,
+          vote_value: value,
+        };
 
-      const { error } = await supabase
-        .from("votes")
-        .upsert(newVote, {
-          onConflict: 'story_id,user_name',
-          ignoreDuplicates: false
+        const { error } = await supabase.from("votes").upsert(newVote, {
+          onConflict: "story_id,user_name",
+          ignoreDuplicates: false,
         });
 
-      if (error) throw error;
-      setSelectedValue(value);
-    } catch (err) {
-      console.error("Failed to submit vote:", err);
-    }
-  }, [roomCode, room?.current_story, userName]);
+        if (error) throw error;
+        setSelectedValue(value);
+      } catch (err) {
+        console.error("Failed to submit vote:", err);
+      }
+    },
+    [roomCode, room?.current_story, userName]
+  );
 
   const handleAddStory = async (title: string, description: string) => {
     if (!roomCode) return;
@@ -496,7 +502,9 @@ export function Room() {
       {isUsernameModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-white mb-4">Enter Your Name</h3>
+            <h3 className="text-lg font-medium text-white mb-4">
+              Enter Your Name
+            </h3>
             <form onSubmit={handleSetUsername}>
               <input
                 type="text"
