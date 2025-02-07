@@ -1,5 +1,6 @@
 import type { Database } from "../../lib/database.types";
 import { calculateStatistics } from "../../lib/utils";
+import { PlayingCard } from "./PlayingCard";
 
 type Room = Database["public"]["Tables"]["rooms"]["Row"];
 type Vote = Database["public"]["Tables"]["votes"]["Row"];
@@ -29,6 +30,8 @@ export function VotingArea({
   onSetVotingScale,
 }: VotingAreaProps) {
   if (!currentStory) return null;
+  const isLinear = room.voting_scale === "linear";
+  const votingNumbers = isLinear ? LINEAR_NUMBERS : FIBONACCI_NUMBERS;
 
   return (
     <div className={`voting-area ${isLoading ? "loading" : ""}`}>
@@ -50,7 +53,7 @@ export function VotingArea({
               className={`text-sm px-3 py-1 rounded ${
                 room.voting_scale === "fibonacci" || !room.voting_scale
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  : "bg-gray-700 text-gray-300"
               }`}
             >
               Fibonacci
@@ -60,7 +63,7 @@ export function VotingArea({
               className={`text-sm px-3 py-1 rounded ${
                 room.voting_scale === "linear"
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  : "bg-gray-700 text-gray-300"
               }`}
             >
               Linear
@@ -99,30 +102,22 @@ export function VotingArea({
         </div>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-1 mt-6">
-        {(room.voting_scale === "linear"
-          ? LINEAR_NUMBERS
-          : FIBONACCI_NUMBERS
-        ).map((value) => (
-          <button
-            key={value}
-            onClick={() => onVote(value)}
-            className={`rounded-lg px-2 py-2 text-sm font-medium ${
-              selectedValue === value
-                ? "bg-indigo-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-
-      {!room.show_votes && votes.length > 0 && (
-        <div className="text-center text-gray-400">
-          {votes.length} vote{votes.length !== 1 ? "s" : ""} cast
+      <div className="flex items-center justify-center">
+        <div
+          className={`grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] ${
+            isLinear ? "md:w-[60%]" : "md:w-[45%]"
+          } gap-1 mt-6 center`}
+        >
+          {votingNumbers.map((value) => (
+            <PlayingCard
+              key={value}
+              value={value}
+              selected={selectedValue === value}
+              onClick={() => onVote(value)}
+            />
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

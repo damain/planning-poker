@@ -260,3 +260,40 @@
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* Playing Card Styles */
+.playing-card-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s;
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.playing-card-button:hover {
+  transform: translateY(-8px);
+}
+
+.playing-card {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  max-width: 130%;
+}
+
+.card-background {
+  fill: #1f2937;
+  stroke: #374151;
+  transition: all 0.2s;
+}
+
+.card-background.selected {
+  fill: #4f46e5;
+  stroke: #6366f1;
+}
+
+.playing-card-button:hover .card-background {
+  stroke: #6366f1;
+}
