@@ -15,7 +15,7 @@ interface VotingAreaProps {
   currentStory: Database["public"]["Tables"]["stories"]["Row"] | undefined;
   onVote: (value: number) => void;
   onToggleVotes: () => void;
-  onSetVotingScale: (scale: "fibonacci" | "linear") => void;
+  onSetVotingScale: (code: string, scale: "fibonacci" | "linear") => void;
 }
 
 export function VotingArea({
@@ -46,7 +46,7 @@ export function VotingArea({
           <h4 className="text-lg font-medium text-gray-200">Your Vote</h4>
           <div className="mt-2 flex items-center gap-4">
             <button
-              onClick={() => onSetVotingScale("fibonacci")}
+              onClick={() => onSetVotingScale(room.code, "fibonacci")}
               className={`text-sm px-3 py-1 rounded ${
                 room.voting_scale === "fibonacci" || !room.voting_scale
                   ? "bg-indigo-600 text-white"
@@ -56,7 +56,7 @@ export function VotingArea({
               Fibonacci
             </button>
             <button
-              onClick={() => onSetVotingScale("linear")}
+              onClick={() => onSetVotingScale(room.code, "linear")}
               className={`text-sm px-3 py-1 rounded ${
                 room.voting_scale === "linear"
                   ? "bg-indigo-600 text-white"
@@ -100,21 +100,22 @@ export function VotingArea({
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] gap-1 mt-6">
-        {(room.voting_scale === "linear" ? LINEAR_NUMBERS : FIBONACCI_NUMBERS).map(
-          (value) => (
-            <button
-              key={value}
-              onClick={() => onVote(value)}
-              className={`rounded-lg px-2 py-2 text-sm font-medium ${
-                selectedValue === value
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-              }`}
-            >
-              {value}
-            </button>
-          )
-        )}
+        {(room.voting_scale === "linear"
+          ? LINEAR_NUMBERS
+          : FIBONACCI_NUMBERS
+        ).map((value) => (
+          <button
+            key={value}
+            onClick={() => onVote(value)}
+            className={`rounded-lg px-2 py-2 text-sm font-medium ${
+              selectedValue === value
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            {value}
+          </button>
+        ))}
       </div>
 
       {!room.show_votes && votes.length > 0 && (
