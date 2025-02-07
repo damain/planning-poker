@@ -478,6 +478,7 @@ export function Room() {
               currentStory={currentStory}
               votes={votes}
               users={users}
+              user={userName}
             />
 
             <VotingArea

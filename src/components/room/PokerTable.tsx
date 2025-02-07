@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import type { Database } from "../../lib/database.types";
 import { PlayingCard } from "./PlayingCard";
 
@@ -20,7 +21,11 @@ function PlayerCard({ user, room, votes }: PlayerCardProps) {
       <div className="text-gray-300 font-medium text-center mb-2 truncate">
         {user}
       </div>
-      <div className={`flex justify-center ${room.show_votes && hasVoted ? "show-vote" : ""}`}>
+      <div
+        className={`flex justify-center ${
+          room.show_votes && hasVoted ? "show-vote" : ""
+        }`}
+      >
         <PlayingCard
           value={userVote?.vote_value || 0}
           selected={false}
@@ -69,6 +74,7 @@ interface PokerTableProps {
   currentStory: Story | undefined;
   votes: Vote[];
   users: string[];
+  user: string;
 }
 
 export function PokerTable({
@@ -76,9 +82,9 @@ export function PokerTable({
   currentStory,
   votes,
   users,
+  user = "",
 }: PokerTableProps) {
   const distribution = distributeUsers(users);
-
   return (
     <div className="poker-table-container">
       {/* The Table */}
@@ -95,6 +101,19 @@ export function PokerTable({
                 </p>
               )}
             </div>
+          </div>
+        )}
+        {/* If there are no stories or a story is not selected we need to show some get Started info */}
+        {!room?.current_story && (
+          <div className="text-xl">
+            <h3 className=" text-2xl mb-6">Hey There {user ?? ""},</h3>
+            <p className="mb-4">Click on "Manage Stories" to get started.</p>
+            <p>
+              After you have created a story click the checkmark button on the
+              story to set it as the active story for discussion
+            </p>
+
+            <p className="italic mt-6">Happy Planning!!!</p>
           </div>
         )}
       </div>
