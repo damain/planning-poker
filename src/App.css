@@ -130,18 +130,27 @@
 .poker-table-container {
   position: relative;
   width: 100%;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 120px;
+  display: flex;
+  justify-content: center;
 }
 
 .poker-table {
   position: relative;
+  width: fit-content;
+  margin: 0 auto;
   z-index: 1;
-  background: linear-gradient(to bottom right, rgba(6, 78, 59, 0.5), rgba(20, 83, 45, 0.5));
+  background: linear-gradient(
+    to bottom right,
+    rgba(6, 78, 59, 0.5),
+    rgba(20, 83, 45, 0.5)
+  );
   border-radius: 1rem;
   padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
