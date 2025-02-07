@@ -2,9 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import {
   supabase,
-  addUserToRoom as addUser,
-  updateUserLastSeen,
-  addVote,
   anonymizeStory,
   anonymizeAllStories,
   createStory,
@@ -287,7 +284,7 @@ export function Room() {
           table: "room_users",
           filter: `room_code=eq.${roomCode}`,
         },
-        async (payload) => {
+        async () => {
           //console.log("Room users changed:", payload);
 
           // Fetch all active users when there's any change
