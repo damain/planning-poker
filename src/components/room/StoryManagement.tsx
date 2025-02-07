@@ -138,7 +138,9 @@ export function StoryManagement({
                     {story.final_estimate && (
                       <p className="mt-2 text-sm">
                         Final estimate:{" "}
-                        <span className="font-bold">{story.final_estimate}</span>
+                        <span className="font-bold">
+                          {story.final_estimate}
+                        </span>
                       </p>
                     )}
                   </div>
@@ -221,9 +223,11 @@ export function StoryManagement({
 
       {/* Add Story Modal */}
       {isAddingStory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-white mb-4">Add New Story</h3>
+            <h3 className="text-lg font-medium text-white mb-4">
+              Add New Story
+            </h3>
             <div className="space-y-4">
               <div>
                 <label
@@ -276,7 +280,7 @@ export function StoryManagement({
 
       {/* Edit Story Modal */}
       {editingStory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-medium text-white mb-4">Edit Story</h3>
             <div className="space-y-4">
@@ -338,14 +342,14 @@ export function StoryManagement({
 
       {/* Anonymize All Modal */}
       {isAnonymizeModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-medium text-white mb-4">
               Anonymize All Stories
             </h3>
             <p className="text-gray-300 mb-6">
-              Are you sure you want to anonymize all stories? This will remove all
-              votes and cannot be undone.
+              Are you sure you want to anonymize all stories? This will remove
+              all votes and cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
