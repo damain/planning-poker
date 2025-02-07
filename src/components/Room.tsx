@@ -37,7 +37,7 @@ export function Room() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false);
   const [tempUserName, setTempUserName] = useState("");
-  console.log({ roomCode });
+  //console.log({ roomCode });
   useEffect(() => {
     if (!roomCode) return;
     const loadRoom = async () => {
@@ -68,7 +68,7 @@ export function Room() {
             .select("*")
             .eq("room_code", roomCode)
             .eq("story_id", roomData.current_story);
-
+          //console.log("Loading vode data for changed story");
           if (voteError) throw voteError;
           setVotes(voteData);
           const vote = voteData.find((vote) => vote.user_name === userName);
@@ -94,7 +94,7 @@ export function Room() {
           filter: `code=eq.${roomCode}`,
         },
         (payload) => {
-          console.log("Room change event received:", payload);
+          //console.log("Room change event received:", payload);
           const newRoom = payload.new as Room;
           setRoom(newRoom);
 
@@ -107,8 +107,11 @@ export function Room() {
               .eq("story_id", newRoom.current_story)
               .then(({ data, error }) => {
                 if (!error && data) {
-                  console.log("Loaded votes for new story:", data);
+                  //console.log("Loaded votes for new story:", data);
                   setVotes(data);
+                  // set the selected value to the user's vote
+                  const vote = data.find((vote) => vote.user_name === userName);
+                  setSelectedValue(vote?.vote_value ?? null);
                 }
               });
           } else {
@@ -131,7 +134,7 @@ export function Room() {
           filter: `room_code=eq.${roomCode}`,
         },
         (payload) => {
-          console.log("Story change event received:", payload);
+          //console.log("Story change event received:", payload);
           if (payload.eventType === "DELETE") {
             setStories((prev) => prev.filter((s) => s.id !== payload.old.id));
           } else {
@@ -159,11 +162,11 @@ export function Room() {
   // Separate useEffect for vote subscription to handle current story changes
   useEffect(() => {
     if (!roomCode || !room?.current_story) {
-      console.log("No current story, not subscribing to votes");
+      //console.log("No current story, not subscribing to votes");
       return;
     }
 
-    console.log("Setting up vote subscription for story:", room.current_story);
+    //console.log("Setting up vote subscription for story:", room.current_story);
     // Subscribe to vote changes for the current story
     const voteSubscription = supabase
       .channel(`public:votes:${room.current_story}`)
@@ -176,7 +179,7 @@ export function Room() {
           filter: `room_code=eq.${roomCode}`,
         },
         (payload) => {
-          console.log("Vote change event received:", payload);
+          //console.log("Vote change event received:", payload);
           setVotes((prev) => {
             if (payload.eventType === "DELETE") {
               return prev.filter((v) => v.id !== payload.old.id);
@@ -193,7 +196,7 @@ export function Room() {
       .subscribe();
 
     return () => {
-      console.log("Cleaning up vote subscription");
+      //console.log("Cleaning up vote subscription");
       voteSubscription.unsubscribe();
     };
   }, [roomCode, room?.current_story]);
@@ -244,7 +247,7 @@ export function Room() {
 
         if (activeUsers) {
           const userNames = activeUsers.map((u) => u.user_name).sort();
-          console.log("Active users:", userNames);
+          //console.log("Active users:", userNames);
           setUsers(userNames);
         }
       } catch (err) {
@@ -285,7 +288,7 @@ export function Room() {
           filter: `room_code=eq.${roomCode}`,
         },
         async (payload) => {
-          console.log("Room users changed:", payload);
+          //console.log("Room users changed:", payload);
 
           // Fetch all active users when there's any change
           const { data: activeUsers, error: fetchError } = await supabase
@@ -301,7 +304,7 @@ export function Room() {
 
           if (activeUsers) {
             const userNames = activeUsers.map((u) => u.user_name).sort();
-            console.log("Updated active users:", userNames);
+            //console.log("Updated active users:", userNames);
             setUsers(userNames);
           }
         }
@@ -398,12 +401,19 @@ export function Room() {
       setIsLoading(true);
       const { error } = await supabase
         .from("rooms")
-        .update({ current_story: storyId })
+        .update({ current_story: storyId, show_votes: false })
         .eq("code", roomCode);
 
       if (error) throw error;
+
+      // // Clear the selected value when switching stories
+      // const userVote = votes.find(
+      //   (vote) => vote.user_name === userName && vote.story_id === storyId
+      // );
+      // //console.log({ userVote });
+      // setSelectedValue(userVote ? userVote.vote_value : null);
     } catch (err) {
-      console.error("Failed to select story:", err);
+      console.error("Failed to update story:", err);
     } finally {
       setIsLoading(false);
     }
@@ -502,7 +512,7 @@ export function Room() {
 
       {/* Username Modal */}
       {isUsernameModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-medium text-white mb-4">
               Enter Your Name

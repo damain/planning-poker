@@ -15,7 +15,7 @@ interface StoryManagementProps {
   onAddStory: (title: string, description: string) => void;
   onEditStory: (story: Story) => void;
   onAnonymizeStory: (storyId: number) => void;
-  onAnonymizeAllStories: () => void;
+  onAnonymizeAllStories: (code: string) => void;
 }
 
 export function StoryManagement({
@@ -360,7 +360,7 @@ export function StoryManagement({
               </button>
               <button
                 onClick={() => {
-                  onAnonymizeAllStories();
+                  onAnonymizeAllStories(room.code);
                   setIsAnonymizeModalOpen(false);
                 }}
                 className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
