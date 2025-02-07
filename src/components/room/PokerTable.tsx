@@ -48,28 +48,24 @@ function distributeUsers(users: string[]) {
   const remainder = totalUsers % 4;
 
   // Start with bottom and top (prioritize these positions)
-  let bottomCount = maxPerSide + (remainder > 0 ? 1 : 0);
-  let topCount = maxPerSide + (remainder > 1 ? 1 : 0);
+  const bottomCount = maxPerSide + (remainder > 0 ? 1 : 0);
+  const topCount = maxPerSide + (remainder > 1 ? 1 : 0);
 
   // Then distribute to sides
-  let leftCount = maxPerSide + (remainder > 2 ? 1 : 0);
-  let rightCount = maxPerSide + (remainder > 3 ? 1 : 0);
+  const leftCount = maxPerSide + (remainder > 2 ? 1 : 0);
+  const rightCount = maxPerSide + (remainder > 3 ? 1 : 0);
 
   // Create the distribution object
-  let currentIndex = 0;
   const distribution = {
-    bottom: users.slice(currentIndex, currentIndex + bottomCount),
-    top: users.slice(
-      currentIndex + bottomCount,
-      currentIndex + bottomCount + topCount
-    ),
+    bottom: users.slice(0, bottomCount),
+    top: users.slice(bottomCount, bottomCount + topCount),
     left: users.slice(
-      currentIndex + bottomCount + topCount,
-      currentIndex + bottomCount + topCount + leftCount
+      bottomCount + topCount,
+      bottomCount + topCount + leftCount
     ),
     right: users.slice(
-      currentIndex + bottomCount + topCount + leftCount,
-      currentIndex + bottomCount + topCount + leftCount + rightCount
+      bottomCount + topCount + leftCount,
+      bottomCount + topCount + leftCount + rightCount
     ),
   };
 
