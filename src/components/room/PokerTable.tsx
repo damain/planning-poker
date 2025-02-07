@@ -1,4 +1,5 @@
 import type { Database } from "../../lib/database.types";
+import { PlayingCard } from "./PlayingCard";
 
 type Room = Database["public"]["Tables"]["rooms"]["Row"];
 type Vote = Database["public"]["Tables"]["votes"]["Row"];
@@ -11,30 +12,21 @@ interface PlayerCardProps {
 }
 
 function PlayerCard({ user, room, votes }: PlayerCardProps) {
+  const userVote = votes.find((v) => v.user_name === user);
+  const hasVoted = !!userVote;
+
   return (
     <div key={user} className="w-32">
       <div className="text-gray-300 font-medium text-center mb-2 truncate">
         {user}
       </div>
-      <div
-        className={`card-flip relative h-16 ${
-          room.show_votes && votes.find((v) => v.user_name === user)
-            ? "show-vote"
-            : ""
-        }`}
-      >
-        <div className="card-front rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-          {votes.find((v) => v.user_name === user) ? (
-            <div className="w-8 h-12 rounded bg-indigo-600"></div>
-          ) : (
-            <div className="text-gray-500">No vote</div>
-          )}
-        </div>
-        <div className="card-back rounded-lg bg-gray-800 shadow-lg ring-1 ring-white/10 flex items-center justify-center">
-          <div className="text-3xl font-bold text-white">
-            {votes.find((v) => v.user_name === user)?.vote_value || "-"}
-          </div>
-        </div>
+      <div className={`flex justify-center ${room.show_votes && hasVoted ? "show-vote" : ""}`}>
+        <PlayingCard
+          value={userVote?.vote_value || 0}
+          selected={false}
+          size="small"
+          showBack={!room.show_votes && hasVoted}
+        />
       </div>
     </div>
   );

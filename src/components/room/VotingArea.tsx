@@ -102,10 +102,12 @@ export function VotingArea({
         </div>
       </div>
 
-      <div className="flex items-center justify-center">
+      <div className="md:flex items-center justify-center">
         <div
           className={`grid grid-cols-[repeat(auto-fit,minmax(40px,1fr))] ${
-            isLinear ? "md:w-[60%]" : "md:w-[45%]"
+            isLinear
+              ? "md:w-[60%] md:max-w-[600px]"
+              : "md:w-[45%] md:max-w-[450px]"
           } gap-1 mt-6 center`}
         >
           {votingNumbers.map((value) => (

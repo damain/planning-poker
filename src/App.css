@@ -274,13 +274,21 @@
   }
 }
 
-.playing-card-button:hover {
+.playing-card-button:not(.no-hover):hover {
   transform: translateY(-8px);
+}
+
+.playing-card-button.no-hover {
+  cursor: default;
 }
 
 .playing-card {
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
   max-width: 130%;
+}
+
+.playing-card.back .card-background {
+  fill: #4f46e5;
 }
 
 .card-background {
@@ -294,6 +302,13 @@
   stroke: #6366f1;
 }
 
-.playing-card-button:hover .card-background {
+.playing-card-button:not(.no-hover):hover .card-background {
+  stroke: #6366f1;
+}
+
+.icon {
+  width: 50%;
+  height: 80%;
+  /* fill: #4f46e5; */
   stroke: #6366f1;
 }
