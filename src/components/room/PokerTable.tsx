@@ -40,6 +40,42 @@ function PlayerCard({ user, room, votes }: PlayerCardProps) {
   );
 }
 
+function distributeUsers(users: string[]) {
+  const totalUsers = users.length;
+
+  // Define max players per side and calculate distribution
+  const maxPerSide = Math.floor(totalUsers / 4); // divide by 4 sides
+  const remainder = totalUsers % 4;
+
+  // Start with bottom and top (prioritize these positions)
+  let bottomCount = maxPerSide + (remainder > 0 ? 1 : 0);
+  let topCount = maxPerSide + (remainder > 1 ? 1 : 0);
+
+  // Then distribute to sides
+  let leftCount = maxPerSide + (remainder > 2 ? 1 : 0);
+  let rightCount = maxPerSide + (remainder > 3 ? 1 : 0);
+
+  // Create the distribution object
+  let currentIndex = 0;
+  const distribution = {
+    bottom: users.slice(currentIndex, currentIndex + bottomCount),
+    top: users.slice(
+      currentIndex + bottomCount,
+      currentIndex + bottomCount + topCount
+    ),
+    left: users.slice(
+      currentIndex + bottomCount + topCount,
+      currentIndex + bottomCount + topCount + leftCount
+    ),
+    right: users.slice(
+      currentIndex + bottomCount + topCount + leftCount,
+      currentIndex + bottomCount + topCount + leftCount + rightCount
+    ),
+  };
+
+  return distribution;
+}
+
 interface PokerTableProps {
   room: Room;
   currentStory: Story | undefined;
@@ -47,7 +83,14 @@ interface PokerTableProps {
   users: string[];
 }
 
-export function PokerTable({ room, currentStory, votes, users }: PokerTableProps) {
+export function PokerTable({
+  room,
+  currentStory,
+  votes,
+  users,
+}: PokerTableProps) {
+  const distribution = distributeUsers(users);
+
   return (
     <div className="poker-table-container">
       {/* The Table */}
@@ -70,28 +113,28 @@ export function PokerTable({ room, currentStory, votes, users }: PokerTableProps
 
       {/* Top Players */}
       <div className="player-cards top">
-        {users.slice(0, 3).map((user) => (
+        {distribution.top.map((user) => (
           <PlayerCard key={user} user={user} room={room} votes={votes} />
         ))}
       </div>
 
       {/* Left Players */}
       <div className="player-cards left">
-        {users.slice(3, 5).map((user) => (
+        {distribution.left.map((user) => (
           <PlayerCard key={user} user={user} room={room} votes={votes} />
         ))}
       </div>
 
       {/* Right Players */}
       <div className="player-cards right">
-        {users.slice(5, 7).map((user) => (
+        {distribution.right.map((user) => (
           <PlayerCard key={user} user={user} room={room} votes={votes} />
         ))}
       </div>
 
       {/* Bottom Players */}
       <div className="player-cards bottom">
-        {users.slice(7, 10).map((user) => (
+        {distribution.bottom.map((user) => (
           <PlayerCard key={user} user={user} room={room} votes={votes} />
         ))}
       </div>
