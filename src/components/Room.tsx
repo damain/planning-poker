@@ -71,6 +71,8 @@ export function Room() {
 
           if (voteError) throw voteError;
           setVotes(voteData);
+          const vote = voteData.find((vote) => vote.user_name === userName);
+          if (vote) setSelectedValue(vote.vote_value);
         }
       } catch (err) {
         setError("Failed to load room data");
