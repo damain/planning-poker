@@ -6,7 +6,7 @@ type Room = Database["public"]["Tables"]["rooms"]["Row"];
 type Vote = Database["public"]["Tables"]["votes"]["Row"];
 
 const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21];
-const LINEAR_NUMBERS = [1, 2, 3, 4, 5, 10, 15, 20, 25];
+const LINEAR_NUMBERS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60];
 
 interface VotingAreaProps {
   room: Room;
